@@ -122,47 +122,77 @@ def build_matchers(services):
     """Build regex matchers for service names with aliases."""
     # Aliases: additional patterns that match to a service
     ALIASES = {
-        "Managed Infrastruktur": [r"infrastruktur", r"infra\b"],
+        "Managed Infrastruktur": [r"infrastruktur", r"infra\b",
+                                   # VMware / ESX / vCenter alerts
+                                   r"esx-\d+", r"vCenter", r"vmware", r"\.vmx\b",
+                                   r"alarm\.Host", r"Alarm alarm\.", r"HostConnectionState",
+                                   # Hardware / NIC / server alerts
+                                   r"The (?:Integrated )?NIC\b", r"2072 (?:Alert|Warning) Event",
+                                   r"System Alert from", r"Dell PowerEdge",
+                                   # Event warnings
+                                   r"Warning \| Event", r"Event occured on"],
         "Managed Backup & DR": [r"backup", r"veeam", r"\bDR\b", r"disaster.?recovery",
-                                 r"\[Success\]", r"\[Failed\]", r"\[Warning\].*Backup",
+                                 r"\[Success\]", r"\[Failed\]", r"\[Warning\].*(?:Backup|objects?)",
                                  r"Backup to Tape", r"Backup to Disk", r"Backup VMware",
                                  r"Client Backup", r"Backup_Master", r"NAS.*Laufwerkszustand",
                                  r"Festplattenintegrit", r"Wiederherstellungstest",
-                                 r"Rücksicherung"],
+                                 r"Rücksicherung",
+                                 # Storage alerts
+                                 r"\[?[A-Z0-9]+-STO-[A-Z0-9]+\]?", r"RZ[0-9]-STO",
+                                 r"Laufwerkszustandsbericht"],
         "Managed Monitoring": [r"monitoring", r"checkmk.*monitor", r"monitor.*check",
                                 r"levigo-Mon:", r"AUTO-GRAYLOG", r"Check_MK:",
-                                r"[a-z]-esx-\d+\.intern\.levigo", r"Graylog"],
-        "Managed MS Exchange Server": [r"exchange", r"exchange.?server"],
-        "Managed Microsoft 365": [r"microsoft\s*365", r"\bM365\b", r"office\s*365", r"\bO365\b"],
+                                r"[a-z]-esx-\d+\.intern\.levigo", r"Graylog",
+                                # Notification / license alerts
+                                r"Notification.*license", r"license.*(?:invalid|issue|expir)"],
+        "Managed MS Exchange Server": [r"exchange", r"exchange.?server",
+                                        # Outlook / Mail problems → Exchange service
+                                        r"\boutlook\b", r"\bpostfach\b", r"e-?mail.*(?:problem|fehler|geht nicht)",
+                                        r"outlook.*(?:verbind|sync|hängt|absturz|langsam|fehler|problem|geht nicht)",
+                                        r"mail.*(?:empfang|versand|kommt nicht|geht nicht|problem|fehler)"],
+        "Managed Microsoft 365": [r"microsoft\s*365", r"\bM365\b", r"office\s*365", r"\bO365\b",
+                                   r"\bTeams\b.*(?:problem|fehler|geht nicht)",
+                                   r"\bSharePoint\b", r"\bOneDrive\b"],
         "Managed Cryptshare": [r"cryptshare"],
         "Shared Firewall": [r"shared.*firewall", r"firewall.*shared", r"SFW\b"],
         "Managed Citrix": [r"citrix"],
         "managed Atlassian": [r"atlassian", r"jira.*managed", r"confluence.*managed"],
         "Managed Networking (WLAN)": [r"wlan", r"wifi", r"wireless"],
-        "Managed Networking (LAN)": [r"\bLAN\b.*managed", r"managed.*\bLAN\b"],
+        "Managed Networking (LAN)": [r"\bLAN\b", r"Netzwerk", r"Switch\b"],
         "Managed Baramundi": [r"baramundi"],
         "levigo cloud.drive": [r"cloud\.?drive", r"clouddrive"],
         "Kaspersky aaS": [r"kaspersky"],
         "Managed Windows Server & AD": [r"windows.?server", r"active.?directory", r"\bAD\b.*managed",
-                                         r"WSUS"],
+                                         r"WSUS",
+                                         # Server updates / patching
+                                         r"Updates? für Server", r"Server.*updates?\b"],
         "levigo managed.archive": [r"managed\.?archive", r"archiv"],
         "Managed MS SQL Server": [r"sql.?server", r"mssql"],
-        "Patchmanagement (Windows)": [r"patch.*windows", r"windows.*patch"],
+        "Patchmanagement (Windows)": [r"patch.*windows", r"windows.*patch",
+                                       r"Windows.*Update", r"Update.*Windows"],
         "Patchmanagement (Linux)": [r"patch.*linux", r"linux.*patch"],
         "levigo AntiSpam": [r"antispam", r"anti.?spam", r"spam.*filter", r"SPOOF"],
         "Managed Endpointsecurity": [r"endpoint.*security", r"endpoint.*protection",
                                       r"Sophos.*Firewall", r"\*ALERT\*.*Sophos",
-                                      r"Ninja.*Agent", r"Ninja Monitoring"],
+                                      r"Ninja.*Agent", r"Ninja Monitoring",
+                                      r"\bVirus\b", r"\bMalware\b", r"Trojaner"],
         "Managed Linux Server": [r"linux.?server"],
         "Managed Bizzdesign Horizzon": [r"bizzdesign", r"horizzon"],
         "Managed MDM": [r"\bMDM\b", r"mobile.?device"],
         "levigo Webhosting": [r"webhosting", r"web.?hosting"],
         "levigo/matrix Mail Server": [r"mail.?server", r"mailserver", r"matrix.*mail"],
         "managed.wireguard": [r"wireguard"],
-        "Housing": [r"\bhousing\b", r"colocation", r"coloc"],
+        "Housing": [r"\bhousing\b", r"colocation", r"coloc",
+                     r"2N.*Access Commander", r"\b2N\b.*Access"],
         "Managed KEMP": [r"\bKEMP\b", r"loadbalancer", r"load.?balancer"],
         "Managed Openshift": [r"openshift"],
-        "Service Desk": [r"service.?desk", r"Anfahrt\b", r"Callback\b", r"Regelwartung"],
+        "Service Desk": [r"service.?desk", r"Anfahrt\b", r"Callback\b", r"Regelwartung",
+                          # Onboarding / hardware provisioning
+                          r"(?:neuer?|neue[sn]?) (?:Mitarbeiter|Notebook|Rechner|Laptop|User|Gerät|PC)",
+                          r"Onboarding",
+                          # Printer
+                          r"[Dd]rucker", r"[Pp]rinter", r"[Dd]rucken",
+                          r"Papierstau", r"Toner"],
         "TaRZ": [r"\bTaRZ\b"],
         "S3 aaS": [r"\bS3\b.*aaS", r"object.?storage"],
         "Kubernetes aaS on VDC (Addon zu CCP)": [r"kubernetes", r"\bk8s\b"],
@@ -175,13 +205,13 @@ def build_matchers(services):
         "Managed Firewall": [r"managed.*firewall", r"\bFirewall\b"],
         "Secure Remote Browsing": [r"remote.?browsing"],
         "Checkmk operating": [r"checkmk", r"check_mk"],
-        "levigo CCP": [r"\bCCP\b", r"cloud.?computing.?platform"],
+        "levigo CCP": [r"\bCCP\b", r"cloud.?computing.?platform",
+                        r"\bazure\b", r"\bAWS\b", r"\bcloud\b"],
         "levigo vDC": [r"\bvDC\b", r"virtual.?data.?center"],
         "managed.backup (VCC)": [r"backup.*VCC", r"VCC.*backup"],
         "managed.backup für M365": [r"backup.*M365", r"M365.*backup", r"backup.*microsoft.*365"],
         "Cyber Risiko Check (nach DIN Spec 27076)": [r"cyber.*risiko", r"DIN.*27076"],
         "vCIO": [r"\bvCIO\b"],
-        "Managed Networking (LAN)": [r"\bLAN\b", r"Netzwerk", r"Switch\b"],
         "levigo Internet-Services": [r"VPN\b", r"Internet.*Service"],
     }
 
@@ -198,9 +228,29 @@ def build_matchers(services):
     matchers.sort(key=lambda x: -len(x[1].pattern))
     return matchers
 
+def decode_mime_subject(s):
+    """Decode MIME-encoded subjects like =?utf-8?Q?...?= or =?utf-8?B?...?="""
+    if '=?' not in s:
+        return s
+    try:
+        import email.header
+        decoded_parts = email.header.decode_header(s)
+        result = []
+        for part, charset in decoded_parts:
+            if isinstance(part, bytes):
+                result.append(part.decode(charset or 'utf-8', errors='replace'))
+            else:
+                result.append(part)
+        return ' '.join(result)
+    except Exception:
+        return s
+
 def match_ticket(ticket, matchers):
     """Match a ticket to a service by summary + description."""
     summary = ticket.get("summary", "")
+    # Decode MIME-encoded subjects
+    if '=?' in summary:
+        summary = decode_mime_subject(summary)
     desc = ticket.get("description", "") or ""
     text = f"{summary} {desc}"
     for name, pattern in matchers:
