@@ -1,7 +1,15 @@
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
+import { useMemo } from 'react'
 
 export function ServiceDetail({ service, onBack, onPersonClick }) {
   if (!service) return null
+
+  const trend = useMemo(() => {
+    if (!service.yearlyTickets) return []
+    return Object.entries(service.yearlyTickets)
+      .map(([year, count]) => ({ year, count }))
+      .sort((a, b) => a.year.localeCompare(b.year))
+  }, [service])
 
   return (
     <div>
@@ -22,12 +30,12 @@ export function ServiceDetail({ service, onBack, onPersonClick }) {
         <div className="detail-section">
           <h4>Ticket-Volumen</h4>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem', marginBottom: '1rem' }}>
-            <span className="ticket-count" style={{ fontSize: '2.5rem' }}>{service.ticketCount.toLocaleString()}</span>
+            <span className="ticket-count" style={{ fontSize: '2.5rem' }}>{service.tickets.toLocaleString()}</span>
             <span className="ticket-label">Tickets gesamt</span>
           </div>
-          {service.yearlyTrend.length > 0 && (
+          {trend.length > 0 && (
             <ResponsiveContainer width="100%" height={200}>
-              <BarChart data={service.yearlyTrend}>
+              <BarChart data={trend}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#333" />
                 <XAxis dataKey="year" stroke="#888" />
                 <YAxis stroke="#888" />
@@ -57,12 +65,46 @@ export function ServiceDetail({ service, onBack, onPersonClick }) {
                     </span>
                   </td>
                   <td>{a.count.toLocaleString()}</td>
-                  <td>{service.ticketCount > 0 ? ((a.count / service.ticketCount) * 100).toFixed(1) : 0}%</td>
+                  <td>{service.tickets > 0 ? ((a.count / service.tickets) * 100).toFixed(1) : 0}%</td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
+
+        {service.byType && Object.keys(service.byType).length > 0 && (
+          <div className="detail-section">
+            <h4>Nach Ticket-Typ</h4>
+            {Object.entries(service.byType)
+              .sort(([,a], [,b]) => b - a)
+              .map(([type, count]) => (
+                <div key={type} className="service-bar">
+                  <span style={{ width: '150px' }}>{type}</span>
+                  <div className="bar-bg">
+                    <div className="bar-fill" style={{ width: `${(count / Math.max(...Object.values(service.byType))) * 100}%` }} />
+                  </div>
+                  <span style={{ minWidth: '40px', textAlign: 'right' }}>{count}</span>
+                </div>
+              ))}
+          </div>
+        )}
+
+        {service.byProject && Object.keys(service.byProject).length > 0 && (
+          <div className="detail-section">
+            <h4>Nach Projekt</h4>
+            {Object.entries(service.byProject)
+              .sort(([,a], [,b]) => b - a)
+              .map(([proj, count]) => (
+                <div key={proj} className="service-bar">
+                  <span style={{ width: '80px' }}>{proj}</span>
+                  <div className="bar-bg">
+                    <div className="bar-fill" style={{ width: `${(count / Math.max(...Object.values(service.byProject))) * 100}%` }} />
+                  </div>
+                  <span style={{ minWidth: '40px', textAlign: 'right' }}>{count}</span>
+                </div>
+              ))}
+          </div>
+        )}
 
         {service.samples && service.samples.length > 0 && (
           <div className="detail-section" style={{ gridColumn: '1 / -1' }}>

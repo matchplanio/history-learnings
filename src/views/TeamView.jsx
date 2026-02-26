@@ -4,8 +4,18 @@ export function TeamView({ data, selectedPerson, onServiceClick }) {
   const [search, setSearch] = useState('')
   const [sort, setSort] = useState('tickets')
 
-  const team = useMemo(() => {
-    let list = data.teamProfiles.filter(p => {
+  // teamProfiles is a dict {name: {totalTickets, topServices, yearlyTickets}}
+  const teamList = useMemo(() => {
+    return Object.entries(data.teamProfiles).map(([name, profile]) => ({
+      name,
+      totalTickets: profile.totalTickets,
+      services: profile.topServices || [],
+      yearlyTickets: profile.yearlyTickets || {}
+    }))
+  }, [data])
+
+  const filtered = useMemo(() => {
+    let list = teamList.filter(p => {
       if (search && !p.name.toLowerCase().includes(search.toLowerCase())) return false
       return true
     })
@@ -16,9 +26,7 @@ export function TeamView({ data, selectedPerson, onServiceClick }) {
       return 0
     })
     return list
-  }, [data, search, sort])
-
-  const maxTickets = Math.max(...data.teamProfiles.map(p => p.totalTickets), 1)
+  }, [teamList, search, sort])
 
   return (
     <div>
@@ -30,10 +38,10 @@ export function TeamView({ data, selectedPerson, onServiceClick }) {
           <option value="services">Services</option>
         </select>
         <input placeholder="Person suchen..." value={search} onChange={e => setSearch(e.target.value)} />
-        <span className="filter-label">{team.length} Personen</span>
+        <span className="filter-label">{filtered.length} Personen</span>
       </div>
       <div className="team-grid">
-        {team.map(p => (
+        {filtered.map(p => (
           <div key={p.name} className={`team-card${selectedPerson === p.name ? ' selected' : ''}`}>
             <h3>{p.name}</h3>
             <div style={{ display: 'flex', gap: '1rem', marginBottom: '0.5rem' }}>
