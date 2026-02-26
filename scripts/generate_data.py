@@ -204,7 +204,9 @@ ALIASES = {
                                         r"PST.*(?:import|migr|konvert)",
                                         # Broader mail issues
                                         r"[Ee]-?[Mm]ail.*(?:geht nicht|kein|Problem|Fehler|Störung)",
-                                        r"Mails?\s+(?:kommen|werden).*nicht"],
+                                        r"Mails?\s+(?:kommen|werden).*nicht",
+                                        # Catch remaining mail/email mentions
+                                        r"\b[Ee]-?[Mm]ails?\b", r"\b[Mm]ailkonto\b"],
         "Managed Microsoft 365": [r"microsoft\s*365", r"\bM365\b", r"office\s*365", r"\bO365\b",
                                    r"\bTeams\b.*(?:problem|fehler|geht nicht)",
                                    r"\bSharePoint\b", r"\bOneDrive\b",
@@ -214,8 +216,10 @@ ALIASES = {
                                    r"\bOffice\b.*(?:lizenz|aktivier|install|update)"],
         "Managed Cryptshare": [r"cryptshare"],
         "Shared Firewall": [r"shared.*firewall", r"firewall.*shared", r"SFW\b"],
-        "Managed Citrix": [r"citrix"],
-        "managed Atlassian": [r"atlassian", r"jira.*managed", r"confluence.*managed"],
+        "Managed Citrix": [r"citrix", r"\bv[Dd]esk(?:top)?\b",
+                            r"\bRDS\b", r"\bAVD\b", r"Terminal.?[Ss]erver"],
+        "managed Atlassian": [r"atlassian", r"jira.*managed", r"confluence.*managed",
+                               r"\bJira\b", r"\bConfluence\b"],
         "Managed Networking (WLAN)": [r"wlan", r"wifi", r"wireless"],
         "Managed Networking (LAN)": [r"\bLAN\b", r"Netzwerk", r"Switch\b",
                                     r"\bVLAN\b", r"\bDHCP\b", r"Patchfeld",
@@ -269,7 +273,11 @@ ALIASES = {
         "levigo/matrix Mail Server": [r"mail.?server", r"mailserver", r"matrix.*mail"],
         "managed.wireguard": [r"wireguard"],
         "Housing": [r"\bhousing\b", r"colocation", r"coloc",
-                     r"2N.*Access Commander", r"\b2N\b.*Access"],
+                     r"2N.*Access Commander", r"\b2N\b.*Access",
+                     # RZ operations / datacenter
+                     r"[Rr]echenzentrum", r"\bRZ\b.*(?:Begehung|Zutritt|Zugang)",
+                     r"[Rr]ack\s*[A-Z]?\s*(?:Door|Tür|Handle)",
+                     r"[Cc]age", r"[Bb]randabschnitt"],
         "Managed KEMP": [r"\bKEMP\b", r"loadbalancer", r"load.?balancer"],
         "Managed Openshift": [r"openshift"],
         "Service Desk": [r"service.?desk", r"Anfahrt\b", r"Callback\b", r"Regelwartung",
@@ -322,7 +330,20 @@ ALIASES = {
                           # Scan / Scanner
                           r"[Ss]canner?\b.*(?:geht nicht|fehler|problem|einricht)",
                           # Generic Anliegen
-                          r"\bAnliegen\b"],
+                          r"\bAnliegen\b",
+                          # Login / account issues
+                          r"[Aa]nmeldung", r"anmelden.*(?:nicht|fehler|problem)",
+                          r"[Ll]ogin.*(?:nicht|fehler|problem|geht)",
+                          # Setup / provisioning
+                          r"[Ee]inricht(?:en|ung)", r"[Kk]onfiguration",
+                          # License management
+                          r"[Ll]izenz.*(?:anpass|erweit|bestell|aktivier|ablauf|verlänger)",
+                          # Migration support
+                          r"[Mm]igration", r"[Uu]mstellung",
+                          # Training / Ausbildung
+                          r"\b[Aa]usbildung\b",
+                          # Generic support keywords
+                          r"\bUnterstützung\b", r"\bHilfe\b.*(?:bei|mit|zu)"],
         "TaRZ": [r"\bTaRZ\b"],
         "S3 aaS": [r"\bS3\b.*aaS", r"object.?storage", r"\bS3\b.*(?:bucket|storage)"],
         "Kubernetes aaS on VDC (Addon zu CCP)": [r"kubernetes", r"\bk8s\b"],
@@ -401,7 +422,7 @@ _CUSTOMER_PREFIX_RE = re.compile(r'^[A-Za-zÄÖÜäöüß][A-Za-z0-9äöüÄÖÜ
 _SYSTEM_SUMMARY_PREFIXES = {"levigo-Mon", "Check_MK", "AUTO-GRAYLOG",
                              "baresel", "acps", "bebion", "tcon", "qulog", "hald",
                              "pmon", "smon", "Fwd", "Re", "AW", "WG",
-                             "IBM", "systems"}
+                             "IBM", "http", "https"}
 _ESX_PREFIX_RE = re.compile(r'^[a-z]-esx-\d+')
 
 def match_ticket(ticket, matchers):
@@ -416,7 +437,11 @@ def match_ticket(ticket, matchers):
         if pattern.search(text):
             return name
 
-    # Fallback: customer-prefixed tickets ("Customer: problem") → Service Desk
+    # Fallback 1: IEO project → Housing (RZ operations)
+    if ticket.get("project") == "IEO":
+        return "Housing"
+
+    # Fallback 2: customer-prefixed tickets ("Customer: problem") → Service Desk
     m = _CUSTOMER_PREFIX_RE.match(summary)
     if m:
         prefix = m.group(0).rstrip(': ')
@@ -432,7 +457,8 @@ def match_ticket(ticket, matchers):
 # Internal system prefixes (not real customers)
 SYSTEM_PREFIXES = {"levigo-Mon", "Check_MK", "AUTO-GRAYLOG",
                     "baresel", "acps", "bebion", "tcon", "qulog", "hald",
-                    "pmon", "smon", "Fwd", "Re", "AW", "WG"}
+                    "pmon", "smon", "Fwd", "Re", "AW", "WG",
+                    "http", "https"}
 ESX_RE = re.compile(r'^[a-z]-esx-\d+')
 
 def extract_customer(ticket):
@@ -1286,33 +1312,56 @@ def generate_profiles(tickets, services, public_dir):
         if len(tix) < 5:
             continue
         services_matched = Counter()
+        unmatched_samples = []
+        for t in tix:
+            svc = match_ticket(t, matchers)
+            if svc:
+                services_matched[svc] += 1
+            else:
+                unmatched_samples.append(t.get("summary", "")[:80])
+        matched_count = sum(services_matched.values())
+        monthly = Counter(t.get("created", "")[:7] for t in tix if t.get("created"))
+        by_type = Counter(t.get("type", "Unknown") for t in tix)
+        customer_profiles.append({
+            "name": cust,
+            "tickets2025": len(tix),
+            "matched": matched_count,
+            "matchRate": round(matched_count / len(tix) * 100, 1),
+            "services": [{"name": n, "count": c} for n, c in services_matched.most_common(10)],
+            "servicesCount": len(services_matched),
+            "monthly": dict(sorted(monthly.items())),
+            "types": dict(by_type.most_common()),
+            "unmatchedSamples": unmatched_samples[:10],
+        })
+
+    # Project profiles (by Jira project key)
+    project_groups = defaultdict(list)
+    for t in tickets_2025:
+        project_groups[t.get("project", "?")].append(t)
+
+    project_profiles = []
+    for proj_name, tix in sorted(project_groups.items(), key=lambda x: -len(x[1])):
+        services_matched = Counter()
         for t in tix:
             svc = match_ticket(t, matchers)
             if svc:
                 services_matched[svc] += 1
         matched_count = sum(services_matched.values())
         monthly = Counter(t.get("created", "")[:7] for t in tix if t.get("created"))
-        customer_profiles.append({
-            "name": cust,
-            "tickets": len(tix),
-            "matchedTickets": matched_count,
+        # Top customers in this project
+        proj_customers = Counter()
+        for t in tix:
+            c = extract_customer(t)
+            if c:
+                proj_customers[c] += 1
+        project_profiles.append({
+            "name": proj_name,
+            "tickets2025": len(tix),
+            "matched": matched_count,
             "matchRate": round(matched_count / len(tix) * 100, 1),
             "services": [{"name": n, "count": c} for n, c in services_matched.most_common(10)],
-            "servicesCount": len(services_matched),
-            "monthlyTickets": dict(sorted(monthly.items())),
-        })
-
-    # Project profiles (SXPP 2025)
-    sxpp_2025 = [t for t in tickets_2025 if t.get("project") == "SXPP" and t.get("type") == "Projekt"]
-    project_profiles = []
-    for p in sxpp_2025:
-        cust = extract_customer(p)
-        project_profiles.append({
-            "key": p["key"],
-            "summary": p.get("summary", ""),
-            "customer": cust,
-            "status": p.get("status", ""),
-            "created": (p.get("created") or "")[:10],
+            "monthly": dict(sorted(monthly.items())),
+            "topCustomers": [{"name": n, "count": c} for n, c in proj_customers.most_common(10)],
         })
 
     profiles = {
@@ -1323,8 +1372,8 @@ def generate_profiles(tickets, services, public_dir):
             "totalTickets": len(tickets_2025),
             "totalCustomers": len(customer_profiles),
             "totalProjects": len(project_profiles),
-            "overallMatchRate": round(sum(c["matchedTickets"] for c in customer_profiles) /
-                                      sum(c["tickets"] for c in customer_profiles) * 100, 1)
+            "overallMatchRate": round(sum(c["matched"] for c in customer_profiles) /
+                                      sum(c["tickets2025"] for c in customer_profiles) * 100, 1)
                                 if customer_profiles else 0,
         },
     }
