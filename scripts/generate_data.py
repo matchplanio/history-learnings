@@ -149,6 +149,9 @@ ALIASES = {
                                    r"^[A-Za-z0-9\-]+\.(?:intern|local|levigo)\.",
                                    # Generic hardware
                                    r"[Kk]abel.*(?:defekt|tausch|ersetzen)",
+                                   # Server reboot/restart alerts
+                                   r"(?:unerwarteter?|spontaner?)\s*[Rr]eboot",
+                                   r"[Ss]erver.*(?:down|offline|nicht.*erreichbar|abgestürzt|Absturz)",
                                    # Battery test (UPS auto-reports)
                                    r"[Bb]attery\s+test\s+(?:active|done|failed|result)",
                                    # IBM DC / datacenter notifications
@@ -178,7 +181,8 @@ ALIASES = {
                                  r"Laufwerkszustandsbericht",
                                  # Filesystem / storage alerts
                                  r"\bfilesystem\b", r"disk\s*space", r"storage\s*(?:alert|warning|full|low)",
-                                 r"Speicherplatz", r"Platte.*voll", r"volume.*(?:full|low|critical)",
+                                 r"Speicherplatz", r"Platte.*voll",
+                                 r"volume.*(?:full|low|critical|running\s+out|capacity)",
                                  # STO status alerts
                                  r"STO.*(?:status|mail)", r"\bSTO\b.*(?:alert|warning)",
                                  # Storage system alerts
@@ -226,7 +230,9 @@ ALIASES = {
                                         r"[Ee]-?[Mm]ail.*(?:geht nicht|kein|Problem|Fehler|Störung)",
                                         r"Mails?\s+(?:kommen|werden).*nicht",
                                         # Catch remaining mail/email mentions
-                                        r"\b[Ee]-?[Mm]ails?\b", r"\b[Mm]ailkonto\b"],
+                                        r"\b[Ee]-?[Mm]ails?\b", r"\b[Mm]ailkonto\b",
+                                        # Exclaimer (email signature management)
+                                        r"\bExclaimer\b"],
         "Managed Microsoft 365": [r"microsoft\s*365", r"\bM365\b", r"office\s*365", r"\bO365\b",
                                    r"\bTeams\b.*(?:problem|fehler|geht nicht)",
                                    r"\bSharePoint\b", r"\bOneDrive\b",
@@ -285,7 +291,13 @@ ALIASES = {
                                       r"[Dd]efender.*(?:Endpoint|install|konfigur|ausnahme|meldet)",
                                       r"[Vv]ulnerabilit(?:y|ies).*(?:notification|Defender)",
                                       # Clientsecurity events
-                                      r"clientsecurity.*event", r"ClientSecurity"],
+                                      r"clientsecurity.*event", r"ClientSecurity",
+                                      # Malware/Schadsoftware
+                                      r"[Ss]chadsoftware", r"[Rr]ansomware",
+                                      r"Trend\s*Micro", r"Virenscanner",
+                                      # Security severity alerts (Defender, etc.)
+                                      r"(?:High|Medium|Low|Informational)[- ]severity\s+alert",
+                                      r"[Pp]ort\s+scan", r"[Ss]ecurity\s+alert"],
         "Managed Linux Server": [r"linux.?server",
                                   r"unattended-upgrades result"],
         "Managed Bizzdesign Horizzon": [r"bizzdesign", r"horizzon",
@@ -309,6 +321,9 @@ ALIASES = {
                      r"(?:eRP|ePA|SekIDP).*(?:PU|RU|TU)\s*[-–]",
                      r"(?:eRP|ePA|SekIDP).*(?:install|server|rack|zone|SAN|NIC|cabling)",
                      r"IBM\s*\|.*(?:eRP|ePA|sIDP|SekIDP)",
+                     # IBM general (summary prefix "IBM:" = IBM contract work)
+                     r"^IBM:",
+                     r"^IBM\s*\|",
                      # Colo / datacenter access
                      r"[Cc]olo\s*\d+", r"Zugang.*(?:Colo|RZ|Rechenzentrum)"],
         "Managed KEMP": [r"\bKEMP\b", r"loadbalancer", r"load.?balancer"],
@@ -428,9 +443,10 @@ ALIASES = {
         "Cyber Risiko Check (nach DIN Spec 27076)": [r"cyber.*risiko", r"DIN.*27076"],
         "vCIO": [r"\bvCIO\b"],
     "levigo Internet-Services": [r"VPN\b", r"Internet.*Service",
-                                  r"\bDomain\b.*(?:registrier|umzug|DNS|verlänger|kündigen|tausch|reserv|zugriff)",
-                                  r"[Ss]ub.?[Dd]omain", r"[Dd]omain\b.*(?:für|fuer|einricht)",
-                                  r"\bDNS\b.*(?:eintrag|änder|zone)",
+                                  # Domain management (broad — "domain" is specific enough in summary)
+                                  r"\b[Dd]omain\b",
+                                  r"\bDNS\b.*(?:eintrag|änder|zone|mapping)",
+                                  r"\bDNS\b",
                                   # SSL / Zertifikate
                                   r"\bSSL\b", r"\bTLS\b", r"[Zz]ertifikat",
                                   r"Let.?s.?Encrypt", r"\bcert\b",
@@ -548,7 +564,16 @@ def match_ticket(ticket, matchers):
     if ticket.get("project") == "IEO":
         return "Housing"
 
-    # Fallback 2: customer-prefixed tickets ("Customer: problem") → Service Desk
+    # Fallback 2: Type-based matching (Anfahrt, Callback = Service Desk)
+    ticket_type = ticket.get("type", "")
+    if ticket_type in ("Anfahrt", "Callback"):
+        return "Service Desk"
+
+    # Fallback 3: FQDN-prefixed summaries (server.domain.tld: alert) → Managed Monitoring
+    if re.match(r'^[A-Za-z0-9\-]+\.[A-Za-z0-9\-]+\.\w+', summary):
+        return "Managed Monitoring"
+
+    # Fallback 4: customer-prefixed tickets ("Customer: problem") → Service Desk
     m = _CUSTOMER_PREFIX_RE.match(summary)
     if m:
         prefix = m.group(0).rstrip(': ')
