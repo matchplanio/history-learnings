@@ -214,14 +214,15 @@ ALIASES = {
                                    r"\bWord\b.*(?:fehler|problem|absturz|öffnet|hängt)",
                                    r"\bExcel\b.*(?:fehler|problem|absturz|öffnet|hängt)",
                                    r"\bOffice\b.*(?:lizenz|aktivier|install|update)"],
-        "Managed Cryptshare": [r"cryptshare"],
+        "Managed Cryptshare": [r"[Cc]ryptshare(?:\s+Server)?"],
         "Shared Firewall": [r"shared.*firewall", r"firewall.*shared", r"SFW\b"],
         "Managed Citrix": [r"citrix", r"\bv[Dd]esk(?:top)?\b",
                             r"\bRDS\b", r"\bAVD\b", r"Terminal.?[Ss]erver"],
         "managed Atlassian": [r"atlassian", r"jira.*managed", r"confluence.*managed",
                                r"\bJira\b", r"\bConfluence\b"],
         "Managed Networking (WLAN)": [r"wlan", r"wifi", r"wireless"],
-        "Managed Networking (LAN)": [r"\bLAN\b", r"Netzwerk", r"Switch\b",
+        "Managed Networking (LAN)": [r"\bLAN\b(?!d)", r"Netzwerk(?!e?\.)",
+                                    r"\bSwitch\b(?!.*[Mm]odus)",
                                     r"\bVLAN\b", r"\bDHCP\b", r"Patchfeld",
                                     r"(?:Netzwerk|LAN).*(?:dose|anschluss|port|kabel)",
                                     r"(?:IP|Adress).*(?:konflikt|änder|zuweisen)"],
@@ -387,19 +388,41 @@ ALIASES = {
 }
 
 def build_matchers(services):
-    """Build regex matchers for service names with aliases."""
-    matchers = []
+    """Build regex matchers for service names with aliases.
+
+    Returns (summary_matchers, description_matchers) — two separate lists.
+    Most patterns only match against summary. Description matching is limited
+    to high-specificity patterns that won't cause false positives from
+    Backup report footers, email signatures, etc.
+    """
+    summary_matchers = []
+    desc_matchers = []
     for name in services:
-        # Primary: exact service name
+        # Primary: exact service name (summary only)
         escaped = re.escape(name)
-        matchers.append((name, re.compile(escaped, re.IGNORECASE)))
-        # Secondary: aliases
+        summary_matchers.append((name, re.compile(escaped, re.IGNORECASE)))
+        # Secondary: aliases (summary only by default)
         for alias in ALIASES.get(name, []):
-            matchers.append((name, re.compile(alias, re.IGNORECASE)))
+            summary_matchers.append((name, re.compile(alias, re.IGNORECASE)))
+
+    # Description-safe patterns: only highly specific terms that won't
+    # appear in backup footers, email signatures, or ticket boilerplate
+    DESC_SAFE_ALIASES = {
+        "Managed Backup & DR": [r"backup", r"veeam", r"disaster.?recovery", r"Wiederherstellungstest"],
+        "Managed Monitoring": [r"Check_MK:", r"levigo-Mon:", r"AUTO-GRAYLOG", r"Graylog"],
+        "Managed Infrastruktur": [r"vCenter", r"vmware", r"Dell PowerEdge"],
+        "Managed Firewall": [r"\bFirewall\b", r"\bFortiGate\b"],
+        "Managed Endpointsecurity": [r"Sophos.*Endpoint", r"\bMalware\b", r"\bVirus\b"],
+        "Managed Citrix": [r"citrix"],
+    }
+    for name, patterns in DESC_SAFE_ALIASES.items():
+        for pat in patterns:
+            desc_matchers.append((name, re.compile(pat, re.IGNORECASE)))
 
     # Sort by pattern length descending (longer/more specific patterns first)
-    matchers.sort(key=lambda x: -len(x[1].pattern))
-    return matchers
+    summary_matchers.sort(key=lambda x: -len(x[1].pattern))
+    desc_matchers.sort(key=lambda x: -len(x[1].pattern))
+    return summary_matchers, desc_matchers
 
 def decode_mime_subject(s):
     """Decode MIME-encoded subjects like =?utf-8?Q?...?= or =?utf-8?B?...?="""
@@ -426,16 +449,30 @@ _SYSTEM_SUMMARY_PREFIXES = {"levigo-Mon", "Check_MK", "AUTO-GRAYLOG",
 _ESX_PREFIX_RE = re.compile(r'^[a-z]-esx-\d+')
 
 def match_ticket(ticket, matchers):
-    """Match a ticket to a service by summary + description."""
+    """Match a ticket to a service using two-pass strategy.
+
+    Pass 1: Match against summary only (all patterns).
+    Pass 2: Match against description with safe-listed patterns only.
+    This prevents false positives from backup report footers, email
+    signatures, and ticket boilerplate that contain service keywords.
+    """
+    summary_matchers, desc_matchers = matchers
     summary = ticket.get("summary", "")
     # Decode MIME-encoded subjects
     if '=?' in summary:
         summary = decode_mime_subject(summary)
-    desc = ticket.get("description", "") or ""
-    text = f"{summary} {desc}"
-    for name, pattern in matchers:
-        if pattern.search(text):
+
+    # Pass 1: summary matching (all patterns)
+    for name, pattern in summary_matchers:
+        if pattern.search(summary):
             return name
+
+    # Pass 2: description matching (safe patterns only)
+    desc = ticket.get("description", "") or ""
+    if desc:
+        for name, pattern in desc_matchers:
+            if pattern.search(desc):
+                return name
 
     # Fallback 1: IEO project → Housing (RZ operations)
     if ticket.get("project") == "IEO":
