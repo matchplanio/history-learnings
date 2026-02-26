@@ -1,0 +1,76 @@
+.app { max-width: 1200px; margin: 0 auto; padding: 1rem; }
+.header { text-align: center; margin-bottom: 2rem; border-bottom: 1px solid #333; padding-bottom: 1rem; }
+.header h1 { margin: 0; cursor: pointer; font-size: 1.8rem; }
+.header h1:hover { opacity: 0.8; }
+.subtitle { color: #888; margin: 0.5rem 0; font-size: 0.9rem; }
+.header nav { display: flex; gap: 0.5rem; justify-content: center; margin-top: 1rem; }
+.header nav button { padding: 0.4rem 1.2rem; border-radius: 6px; border: 1px solid #444; background: transparent; color: #ccc; cursor: pointer; font-size: 0.85rem; }
+.header nav button.active { background: #646cff; color: white; border-color: #646cff; }
+.header nav button:hover:not(.active) { border-color: #646cff; }
+
+.loading { text-align: center; padding: 4rem; color: #888; }
+
+/* Service Dashboard */
+.service-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1rem; }
+.service-card { background: #1e1e2e; border: 1px solid #333; border-radius: 8px; padding: 1rem; cursor: pointer; transition: border-color 0.2s; }
+.service-card:hover { border-color: #646cff; }
+.service-card h3 { margin: 0 0 0.5rem; font-size: 1rem; }
+.service-card .meta { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.5rem; }
+.badge { padding: 2px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: 600; }
+.badge-live { background: #1a3a1a; color: #4ade80; }
+.badge-eos { background: #3a2a1a; color: #fbbf24; }
+.badge-dev { background: #1a2a3a; color: #60a5fa; }
+.badge-idea { background: #2a1a3a; color: #a78bfa; }
+.badge-dead { background: #3a1a1a; color: #f87171; }
+.badge-type { background: #2a2a2a; color: #94a3b8; }
+.ticket-count { font-size: 1.8rem; font-weight: 700; color: #646cff; }
+.ticket-label { color: #888; font-size: 0.8rem; }
+.assignee-list { margin-top: 0.5rem; font-size: 0.8rem; color: #94a3b8; }
+.mini-trend { display: flex; gap: 2px; align-items: flex-end; height: 30px; margin-top: 0.5rem; }
+.mini-bar { background: #646cff; border-radius: 2px; min-width: 8px; opacity: 0.7; }
+
+/* Filters */
+.filters { display: flex; gap: 0.5rem; margin-bottom: 1.5rem; flex-wrap: wrap; align-items: center; }
+.filters select, .filters input { padding: 0.4rem 0.8rem; border-radius: 6px; border: 1px solid #444; background: #1e1e2e; color: #ccc; font-size: 0.85rem; }
+.filter-label { color: #888; font-size: 0.8rem; }
+
+/* Service Detail */
+.detail-header { margin-bottom: 2rem; }
+.detail-header h2 { margin: 0 0 0.5rem; }
+.back-link { color: #646cff; cursor: pointer; font-size: 0.85rem; margin-bottom: 1rem; display: inline-block; }
+.back-link:hover { text-decoration: underline; }
+.detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+.detail-section { background: #1e1e2e; border: 1px solid #333; border-radius: 8px; padding: 1rem; }
+.detail-section h4 { margin: 0 0 0.5rem; color: #94a3b8; font-size: 0.85rem; text-transform: uppercase; }
+
+/* Team View */
+.team-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 1rem; }
+.team-card { background: #1e1e2e; border: 1px solid #333; border-radius: 8px; padding: 1rem; }
+.team-card.selected { border-color: #646cff; border-width: 2px; }
+.team-card h3 { margin: 0 0 0.5rem; }
+.service-bar { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 4px; font-size: 0.8rem; cursor: pointer; }
+.service-bar:hover { color: #646cff; }
+.bar-fill { height: 6px; background: #646cff; border-radius: 3px; }
+.bar-bg { flex: 1; height: 6px; background: #2a2a3a; border-radius: 3px; overflow: hidden; }
+
+/* Trend View */
+.trend-chart { background: #1e1e2e; border: 1px solid #333; border-radius: 8px; padding: 1rem; margin-bottom: 1rem; }
+.trend-chart h3 { margin: 0 0 1rem; font-size: 1rem; }
+
+/* Table */
+.data-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+.data-table th { text-align: left; padding: 0.5rem; border-bottom: 1px solid #444; color: #94a3b8; font-weight: 600; }
+.data-table td { padding: 0.5rem; border-bottom: 1px solid #2a2a2a; }
+.data-table tr:hover { background: #2a2a3a; }
+.clickable { cursor: pointer; color: #646cff; }
+.clickable:hover { text-decoration: underline; }
+
+/* Samples */
+.sample { background: #2a2a3a; border-radius: 4px; padding: 0.4rem 0.6rem; margin-bottom: 4px; font-size: 0.8rem; }
+.sample-key { color: #646cff; font-weight: 600; margin-right: 0.5rem; }
+
+@media (max-width: 768px) {
+  .detail-grid { grid-template-columns: 1fr; }
+  .service-grid { grid-template-columns: 1fr; }
+  .team-grid { grid-template-columns: 1fr; }
+}
