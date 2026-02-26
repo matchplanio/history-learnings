@@ -10,6 +10,7 @@ import { UnmatchedView } from './views/UnmatchedView'
 import { CustomerView } from './views/CustomerView'
 import { ProjectView } from './views/ProjectView'
 import { MethodikView } from './views/MethodikView'
+import { ERP2025View } from './views/ERP2025View'
 
 const navItems = [
   { id: 'services', label: 'Services', icon: '◆' },
@@ -18,6 +19,7 @@ const navItems = [
   { id: 'categories', label: 'Kategorien', icon: '◈' },
   { id: 'customers', label: 'Kunden', icon: '◎' },
   { id: 'projects', label: 'Projekte', icon: '◫' },
+  { id: 'erp-2025', label: 'ERP 2025', icon: '⊕' },
   { id: 'units', label: 'Units', icon: '⊞' },
   { id: 'unmatched', label: 'Unmatched', icon: '⊘' },
   { id: 'methodik', label: 'Methodik', icon: '⚙' },
@@ -28,9 +30,14 @@ function App() {
   const [currentView, setCurrentView] = useState('services')
   const [selectedService, setSelectedService] = useState(null)
   const [selectedPerson, setSelectedPerson] = useState(null)
+  const [profiles, setProfiles] = useState(null)
 
   useEffect(() => {
     fetch('/data.json').then(r => r.json()).then(setData)
+  }, [])
+
+  useEffect(() => {
+    fetch('/profiles2025.json').then(r => r.json()).then(setProfiles).catch(() => {})
   }, [])
 
   useEffect(() => {
@@ -191,6 +198,7 @@ function App() {
         {currentView === 'customers' && <CustomerView data={data} onServiceClick={openService} />}
         {currentView === 'projects' && <ProjectView data={data} onServiceClick={openService} />}
         {currentView === 'units' && <UnitView data={data} onServiceClick={openService} />}
+        {currentView === 'erp-2025' && profiles && <ERP2025View data={data} profiles={profiles} onServiceClick={openService} />}
         {currentView === 'unmatched' && <UnmatchedView data={data} />}
         {currentView === 'methodik' && <MethodikView data={data} />}
       </main>

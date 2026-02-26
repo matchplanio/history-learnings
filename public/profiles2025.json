@@ -1,0 +1,2205 @@
+{
+  "customerProfiles": [
+    {
+      "name": "Baresel",
+      "tickets2025": 851,
+      "matched": 851,
+      "matchRate": 100.0,
+      "services": [
+        {
+          "name": "Managed Infrastruktur",
+          "count": 647
+        },
+        {
+          "name": "Managed Backup & DR",
+          "count": 103
+        },
+        {
+          "name": "Managed Monitoring",
+          "count": 101
+        }
+      ],
+      "types": {
+        "Service Request": 816,
+        "Anfahrt": 2,
+        "Incident": 28,
+        "Callback": 1,
+        "Change": 4
+      },
+      "unmatchedSamples": []
+    },
+    {
+      "name": "DMT",
+      "tickets2025": 362,
+      "matched": 347,
+      "matchRate": 95.9,
+      "services": [
+        {
+          "name": "Managed Backup & DR",
+          "count": 317
+        },
+        {
+          "name": "Managed Infrastruktur",
+          "count": 19
+        },
+        {
+          "name": "Managed Firewall",
+          "count": 3
+        },
+        {
+          "name": "Managed Monitoring",
+          "count": 3
+        },
+        {
+          "name": "Managed Baramundi",
+          "count": 3
+        },
+        {
+          "name": "Patchmanagement (Windows)",
+          "count": 1
+        },
+        {
+          "name": "Managed Microsoft 365",
+          "count": 1
+        }
+      ],
+      "types": {
+        "Service Request": 306,
+        "Incident": 55,
+        "Change": 1
+      },
+      "unmatchedSamples": [
+        "DMT: Blocker für JF",
+        "DMT: [DMT-BAK-01-IDRAC] DMT-BAK-01: The Embedded NIC 1 Port 2 network link is down.",
+        "DMT: [DMT-BAK-01-IDRAC] DMT-BAK-01: The Embedded NIC 1 Port 1 network link is down.",
+        "DMT: [DMT-BAK-01-IDRAC] DMT-BAK-01: The Fibre Channel in Slot 7 Port 1 network link is down.",
+        "DMT: vMotion bei VM \"DMT-SFM-01\" nicht möglich"
+      ]
+    },
+    {
+      "name": "ACPS",
+      "tickets2025": 312,
+      "matched": 312,
+      "matchRate": 100.0,
+      "services": [
+        {
+          "name": "Managed Backup & DR",
+          "count": 176
+        },
+        {
+          "name": "Managed Infrastruktur",
+          "count": 98
+        },
+        {
+          "name": "Managed Monitoring",
+          "count": 38
+        }
+      ],
+      "types": {
+        "Service Request": 90,
+        "Incident": 208,
+        "Change": 12,
+        "Callback": 2
+      },
+      "unmatchedSamples": []
+    },
+    {
+      "name": "n-esx-04.intern.levigo.de",
+      "tickets2025": 106,
+      "matched": 106,
+      "matchRate": 100.0,
+      "services": [
+        {
+          "name": "Managed Infrastruktur",
+          "count": 106
+        }
+      ],
+      "types": {
+        "Service Request": 106
+      },
+      "unmatchedSamples": []
+    },
+    {
+      "name": "Bebion",
+      "tickets2025": 96,
+      "matched": 96,
+      "matchRate": 100.0,
+      "services": [
+        {
+          "name": "Managed Monitoring",
+          "count": 82
+        },
+        {
+          "name": "Managed Backup & DR",
+          "count": 11
+        },
+        {
+          "name": "Managed Infrastruktur",
+          "count": 3
+        }
+      ],
+      "types": {
+        "Incident": 18,
+        "Service Request": 68,
+        "Change": 5,
+        "Anfahrt": 5
+      },
+      "unmatchedSamples": []
+    },
+    {
+      "name": "systems",
+      "tickets2025": 88,
+      "matched": 75,
+      "matchRate": 85.2,
+      "services": [
+        {
+          "name": "Managed Backup & DR",
+          "count": 42
+        },
+        {
+          "name": "Managed Infrastruktur",
+          "count": 21
+        },
+        {
+          "name": "Managed Monitoring",
+          "count": 6
+        },
+        {
+          "name": "levigo CCP",
+          "count": 2
+        },
+        {
+          "name": "Managed MS Exchange Server",
+          "count": 1
+        },
+        {
+          "name": "Managed MS SQL Server",
+          "count": 1
+        },
+        {
+          "name": "Managed Citrix",
+          "count": 1
+        },
+        {
+          "name": "Patchmanagement (Windows)",
+          "count": 1
+        }
+      ],
+      "types": {
+        "Service Request": 36,
+        "Incident": 52
+      },
+      "unmatchedSamples": [
+        "systems: [package on hold] unattended-upgrades result for gitlab.levigo.systems: FAILURE",
+        "systems: lytics.levigo.de: New Matomo 5.5.1 is available",
+        "systems: ALERT nbg-webserver/www: redirect.matrix.de (Tue Oct 21 21:02:31)",
+        "systems: lytics.levigo.de: New Matomo 5.5.0 is available",
+        "systems: ClamAV-Patternupdates auf URMX"
+      ]
+    },
+    {
+      "name": "levigo-Mon",
+      "tickets2025": 81,
+      "matched": 81,
+      "matchRate": 100.0,
+      "services": [
+        {
+          "name": "Managed Monitoring",
+          "count": 46
+        },
+        {
+          "name": "Managed Backup & DR",
+          "count": 34
+        },
+        {
+          "name": "Managed Infrastruktur",
+          "count": 1
+        }
+      ],
+      "types": {
+        "Incident": 22,
+        "Service Request": 59
+      },
+      "unmatchedSamples": []
+    },
+    {
+      "name": "RolfBenz",
+      "tickets2025": 63,
+      "matched": 13,
+      "matchRate": 20.6,
+      "services": [
+        {
+          "name": "Managed Backup & DR",
+          "count": 4
+        },
+        {
+          "name": "Checkmk operating",
+          "count": 2
+        },
+        {
+          "name": "Managed KEMP",
+          "count": 2
+        },
+        {
+          "name": "Managed Endpointsecurity",
+          "count": 1
+        },
+        {
+          "name": "Managed Baramundi",
+          "count": 1
+        },
+        {
+          "name": "Managed MS Exchange Server",
+          "count": 1
+        },
+        {
+          "name": "Managed Infrastruktur",
+          "count": 1
+        },
+        {
+          "name": "levigo Internet-Services",
+          "count": 1
+        }
+      ],
+      "types": {
+        "Incident": 8,
+        "Service Request": 52,
+        "Change": 3
+      },
+      "unmatchedSamples": [
+        "RolfBenz: rbsvweb02 - hohe Load & nicht ansprechbar",
+        "RolfBenz: RB Haus Berlin Website ",
+        "RolfBenz: RB Haus Berlin Website ",
+        "RolfBenz: rbsvweb02 -> Wordpress ->PHP Version",
+        "RolfBenz: Anfrage Nextcloud -  Upgrade auf Nextcloud 32 mit MariaDB Update möglich ? "
+      ]
+    },
+    {
+      "name": "n-esx-07.intern.levigo.de",
+      "tickets2025": 63,
+      "matched": 63,
+      "matchRate": 100.0,
+      "services": [
+        {
+          "name": "Managed Infrastruktur",
+          "count": 63
+        }
+      ],
+      "types": {
+        "Service Request": 62,
+        "Incident": 1
+      },
+      "unmatchedSamples": []
+    },
+    {
+      "name": "ISP",
+      "tickets2025": 57,
+      "matched": 45,
+      "matchRate": 78.9,
+      "services": [
+        {
+          "name": "Managed Infrastruktur",
+          "count": 36
+        },
+        {
+          "name": "Managed Backup & DR",
+          "count": 6
+        },
+        {
+          "name": "Managed Citrix",
+          "count": 2
+        },
+        {
+          "name": "Service Desk",
+          "count": 1
+        }
+      ],
+      "types": {
+        "Service Request": 28,
+        "Incident": 28,
+        "Change": 1
+      },
+      "unmatchedSamples": [
+        "ISP: Bitdefender Lizenzgrenze erreicht oder überschritten",
+        "ISP: Abgeschaltete VMs",
+        "ISP: Neue VMs ausrollen für Praxisumstrukturierung [DNW-Ticket #98930]  Auftrag 25200345;",
+        "ISP: Unterstützung bei Penetrationstest",
+        "ISP: heutige Elektroarbeiten am Standort Niefern"
+      ]
+    },
+    {
+      "name": "SBS",
+      "tickets2025": 55,
+      "matched": 11,
+      "matchRate": 20.0,
+      "services": [
+        {
+          "name": "Managed Firewall",
+          "count": 4
+        },
+        {
+          "name": "Service Desk",
+          "count": 3
+        },
+        {
+          "name": "Managed Networking (LAN)",
+          "count": 2
+        },
+        {
+          "name": "levigo Internet-Services",
+          "count": 1
+        },
+        {
+          "name": "Managed MS Exchange Server",
+          "count": 1
+        }
+      ],
+      "types": {
+        "Incident": 6,
+        "Service Request": 40,
+        "Anfahrt": 3,
+        "Change": 6
+      },
+      "unmatchedSamples": [
+        "SBS: oneword: Telefonanlage",
+        "SBS: DigitalConsultingHaus: Nebenstellen abmelden",
+        "SBS: oneword: Nebenstelle 9566 einrichten",
+        "SBS: In-Xperts: Nebenstelle 5301 neu einrichten",
+        "SBS: itquelle: Server aufstellen Vorbesprechung"
+      ]
+    },
+    {
+      "name": "Fontis",
+      "tickets2025": 47,
+      "matched": 47,
+      "matchRate": 100.0,
+      "services": [
+        {
+          "name": "Managed Backup & DR",
+          "count": 28
+        },
+        {
+          "name": "Managed Infrastruktur",
+          "count": 14
+        },
+        {
+          "name": "Managed Monitoring",
+          "count": 5
+        }
+      ],
+      "types": {
+        "Service Request": 18,
+        "Change": 1,
+        "Incident": 28
+      },
+      "unmatchedSamples": []
+    },
+    {
+      "name": "h-esx-01.intern.levigo.de",
+      "tickets2025": 38,
+      "matched": 38,
+      "matchRate": 100.0,
+      "services": [
+        {
+          "name": "Managed Infrastruktur",
+          "count": 38
+        }
+      ],
+      "types": {
+        "Service Request": 38
+      },
+      "unmatchedSamples": []
+    },
+    {
+      "name": "ADREX",
+      "tickets2025": 35,
+      "matched": 30,
+      "matchRate": 85.7,
+      "services": [
+        {
+          "name": "Managed Infrastruktur",
+          "count": 23
+        },
+        {
+          "name": "Managed MS Exchange Server",
+          "count": 3
+        },
+        {
+          "name": "Managed Backup & DR",
+          "count": 3
+        },
+        {
+          "name": "Managed Microsoft 365",
+          "count": 1
+        }
+      ],
+      "types": {
+        "Service Request": 7,
+        "Incident": 23,
+        "Change": 5
+      },
+      "unmatchedSamples": [
+        "ADREX: Anmeldung an Office nicht möglich",
+        "ADREX: Terminalsession langsam",
+        "ADREX: Email-Adresse s.haesler@adrex.de aus Verteiler aussendienst@adrex.de entfernen",
+        "ADREX: Umzug von Applikation TAIFUN auf einen Anwendungserver [MINI]",
+        "ADREX: Neue Terminalserverfarm [MINI]"
+      ]
+    },
+    {
+      "name": "Salm",
+      "tickets2025": 32,
+      "matched": 15,
+      "matchRate": 46.9,
+      "services": [
+        {
+          "name": "Managed Infrastruktur",
+          "count": 6
+        },
+        {
+          "name": "Managed Citrix",
+          "count": 3
+        },
+        {
+          "name": "Managed MS Exchange Server",
+          "count": 2
+        },
+        {
+          "name": "Managed Backup & DR",
+          "count": 2
+        },
+        {
+          "name": "1Password operating",
+          "count": 1
+        },
+        {
+          "name": "Service Desk",
+          "count": 1
+        }
+      ],
+      "types": {
+        "Service Request": 22,
+        "Incident": 7,
+        "Change": 1,
+        "Sub-Task": 1,
+        "Projekt": 1
+      },
+      "unmatchedSamples": [
+        "Salm: Druckservermigration",
+        "Salm: Software Installation",
+        "Salm: Ninja: Es wird kein Verifikationscode zugestellt",
+        "Salm: Zertifikat salm-karlsruhe.de",
+        "Salm: Ordner anlegen"
+      ]
+    },
+    {
+      "name": "BARCON2SERVER.BARCONTROL2.local",
+      "tickets2025": 32,
+      "matched": 0,
+      "matchRate": 0.0,
+      "services": [],
+      "types": {
+        "Service Request": 32
+      },
+      "unmatchedSamples": [
+        "BARCON2SERVER.BARCONTROL2.local: The Patrol Read operation completed for RAID Controller in Slot 2.",
+        "BARCON2SERVER.BARCONTROL2.local: A Patrol Read operation started for RAID Controller in Slot 2.",
+        "BARCON2SERVER.BARCONTROL2.local: The Patrol Read operation completed for RAID Controller in Slot 2.",
+        "BARCON2SERVER.BARCONTROL2.local: A Patrol Read operation started for RAID Controller in Slot 2.",
+        "BARCON2SERVER.BARCONTROL2.local: The Patrol Read operation completed for RAID Controller in Slot 2."
+      ]
+    },
+    {
+      "name": "n-esx-06.intern.levigo.de",
+      "tickets2025": 30,
+      "matched": 30,
+      "matchRate": 100.0,
+      "services": [
+        {
+          "name": "Managed Infrastruktur",
+          "count": 30
+        }
+      ],
+      "types": {
+        "Service Request": 30
+      },
+      "unmatchedSamples": []
+    },
+    {
+      "name": "TNBW",
+      "tickets2025": 28,
+      "matched": 9,
+      "matchRate": 32.1,
+      "services": [
+        {
+          "name": "managed Atlassian",
+          "count": 5
+        },
+        {
+          "name": "Managed Bizzdesign Horizzon",
+          "count": 3
+        },
+        {
+          "name": "Managed Backup & DR",
+          "count": 1
+        }
+      ],
+      "types": {
+        "Incident": 10,
+        "Service Request": 7,
+        "Change": 7,
+        "Sub-Task": 3,
+        "Projekt": 1
+      },
+      "unmatchedSamples": [
+        "TNBW: Offboarding aus den Zugriffspaketen",
+        "TNBW: Defekter Server (S/N: GOTCR5121A0116) - Redfish Endpoints/Targets für den VirtualMedia-Mount nicht ansprechbar",
+        "TNBW: System Healthy orange / Status Uncorrectable MCA error(Processor Error)",
+        "TNBW: Defekter Server, Spannungssensor zeigt etwa 0V (SN: GOSCR5121A0031) [MSHIPPBASE-1199 - System Healthy Status / Vol",
+        "TNBW: Installation DevSecChatOpsPlatform"
+      ]
+    },
+    {
+      "name": "Lohnpack",
+      "tickets2025": 26,
+      "matched": 10,
+      "matchRate": 38.5,
+      "services": [
+        {
+          "name": "Managed Infrastruktur",
+          "count": 5
+        },
+        {
+          "name": "Managed Backup & DR",
+          "count": 4
+        },
+        {
+          "name": "Managed Monitoring",
+          "count": 1
+        }
+      ],
+      "types": {
+        "Service Request": 18,
+        "Incident": 7,
+        "Change": 1
+      },
+      "unmatchedSamples": [
+        "Lohnpack: Computer w10-ic-nl-12",
+        "Lohnpack: Horizon Image monatliches Update",
+        "Lohnpack: Jour fixe 2025-05",
+        "Lohnpack: Horizon Image monatliches Update ",
+        "Lohnpack: DECT-Basisstationen prüfen"
+      ]
+    },
+    {
+      "name": "ESXPSFR04.befine.local",
+      "tickets2025": 25,
+      "matched": 6,
+      "matchRate": 24.0,
+      "services": [
+        {
+          "name": "Managed Infrastruktur",
+          "count": 6
+        }
+      ],
+      "types": {
+        "Service Request": 24,
+        "Incident": 1
+      },
+      "unmatchedSamples": [
+        "ESXPSFR04.befine.local: Predictive failure reported for Disk 2 in Backplane 1 of Integrated RAID Controller 1. Part Numb",
+        "ESXPSFR04.befine.local: Predictive failure reported for Disk 2 in Backplane 1 of Integrated RAID Controller 1. Part Numb",
+        "ESXPSFR04.befine.local: Predictive failure reported for Disk 2 in Backplane 1 of Integrated RAID Controller 1. Part Numb",
+        "ESXPSFR04.befine.local: Predictive failure reported for Disk 2 in Backplane 1 of Integrated RAID Controller 1. Part Numb",
+        "ESXPSFR04.befine.local: Predictive failure reported for Disk 2 in Backplane 1 of Integrated RAID Controller 1. Part Numb"
+      ]
+    },
+    {
+      "name": "HERION-BAK01",
+      "tickets2025": 24,
+      "matched": 4,
+      "matchRate": 16.7,
+      "services": [
+        {
+          "name": "Managed Infrastruktur",
+          "count": 4
+        }
+      ],
+      "types": {
+        "Service Request": 24
+      },
+      "unmatchedSamples": [
+        "HERION-BAK01: The Patrol Read operation completed for RAID Controller in Slot 2.",
+        "HERION-BAK01: A Patrol Read operation started for RAID Controller in Slot 2.",
+        "HERION-BAK01: The Patrol Read operation completed for RAID Controller in Slot 2.",
+        "HERION-BAK01: A Patrol Read operation started for RAID Controller in Slot 2.",
+        "HERION-BAK01: The Patrol Read operation completed for RAID Controller in Slot 2."
+      ]
+    },
+    {
+      "name": "c-esx-02.intern.levigo.de",
+      "tickets2025": 24,
+      "matched": 24,
+      "matchRate": 100.0,
+      "services": [
+        {
+          "name": "Managed Infrastruktur",
+          "count": 24
+        }
+      ],
+      "types": {
+        "Service Request": 24
+      },
+      "unmatchedSamples": []
+    },
+    {
+      "name": "eh-esx-04.intern.levigo.de",
+      "tickets2025": 23,
+      "matched": 23,
+      "matchRate": 100.0,
+      "services": [
+        {
+          "name": "Managed Infrastruktur",
+          "count": 23
+        }
+      ],
+      "types": {
+        "Service Request": 21,
+        "Incident": 2
+      },
+      "unmatchedSamples": []
+    },
+    {
+      "name": "Hydrobar",
+      "tickets2025": 21,
+      "matched": 11,
+      "matchRate": 52.4,
+      "services": [
+        {
+          "name": "Managed Infrastruktur",
+          "count": 5
+        },
+        {
+          "name": "Managed Backup & DR",
+          "count": 2
+        },
+        {
+          "name": "Service Desk",
+          "count": 1
+        },
+        {
+          "name": "Managed Microsoft 365",
+          "count": 1
+        },
+        {
+          "name": "levigo Internet-Services",
+          "count": 1
+        },
+        {
+          "name": "Managed Windows Server & AD",
+          "count": 1
+        }
+      ],
+      "types": {
+        "Service Request": 14,
+        "Change": 2,
+        "Incident": 5
+      },
+      "unmatchedSamples": [
+        "Hydrobar: Buchhaltung Server ist offline",
+        "Hydrobar: New MailStore Server version available",
+        "Hydrobar: MailStore Server Status Report",
+        "Hydrobar: TLS-Zertifikat cobra.hydrobar.de 2025",
+        "Hydrobar: URLs können nicht aufgerufen werden"
+      ]
+    },
+    {
+      "name": "BWK",
+      "tickets2025": 20,
+      "matched": 10,
+      "matchRate": 50.0,
+      "services": [
+        {
+          "name": "Managed Backup & DR",
+          "count": 7
+        },
+        {
+          "name": "Managed MS Exchange Server",
+          "count": 2
+        },
+        {
+          "name": "Managed Windows Server & AD",
+          "count": 1
+        }
+      ],
+      "types": {
+        "Service Request": 16,
+        "Incident": 4
+      },
+      "unmatchedSamples": [
+        "BWK: Software installieren | deinstallieren",
+        "BWK: Bitdefender muss installiert werden",
+        "BWK: Adobe Acrobat pro",
+        "BWK: Offboarding Frau Beatrix Göntgen",
+        "BWK: Teams funktioniert nicht"
+      ]
+    },
+    {
+      "name": "SRV-ESX02",
+      "tickets2025": 19,
+      "matched": 16,
+      "matchRate": 84.2,
+      "services": [
+        {
+          "name": "Managed Infrastruktur",
+          "count": 16
+        }
+      ],
+      "types": {
+        "Service Request": 19
+      },
+      "unmatchedSamples": [
+        "SRV-ESX02: User root via IP 10.168.17.166 requested state / configuration change to Alert Configuration using GUI.",
+        "SRV-ESX02: Successfully logged in using root, from 10.168.17.166 and GUI.",
+        "SRV-ESX02: The session for root from 10.168.17.166 using GUI is logged off."
+      ]
+    },
+    {
+      "name": "SRV-ESX01",
+      "tickets2025": 18,
+      "matched": 16,
+      "matchRate": 88.9,
+      "services": [
+        {
+          "name": "Managed Infrastruktur",
+          "count": 16
+        }
+      ],
+      "types": {
+        "Service Request": 18
+      },
+      "unmatchedSamples": [
+        "SRV-ESX01: The Power Supply Unit (PSU) 2 is not receiving input power because of issues in PSU or cable connections.",
+        "SRV-ESX01: Power supply redundancy is lost."
+      ]
+    },
+    {
+      "name": "Elektro-Gerlach",
+      "tickets2025": 18,
+      "matched": 11,
+      "matchRate": 61.1,
+      "services": [
+        {
+          "name": "Managed Backup & DR",
+          "count": 8
+        },
+        {
+          "name": "Service Desk",
+          "count": 1
+        },
+        {
+          "name": "Managed MS Exchange Server",
+          "count": 1
+        },
+        {
+          "name": "Managed Microsoft 365",
+          "count": 1
+        }
+      ],
+      "types": {
+        "Service Request": 11,
+        "Incident": 6,
+        "Change": 1
+      },
+      "unmatchedSamples": [
+        "Elektro-Gerlach: Druckaufträge extrem verzögert",
+        "Elektro-Gerlach: elektrogerlach.onmicrosoft.com: Synchronization has stopped for at least 24 hours. – You have an import",
+        "Elektro-Gerlach: Neue Synology einrichten",
+        "Elektro-Gerlach: Vulnerabilities have verified exploit notification from Microsoft Defender for Endpoint",
+        "Elektro-Gerlach: New vulnerabilities notification from Microsoft Defender for Endpoint"
+      ]
+    },
+    {
+      "name": "CMC-2WWDFV2",
+      "tickets2025": 17,
+      "matched": 0,
+      "matchRate": 0.0,
+      "services": [],
+      "types": {
+        "Service Request": 17
+      },
+      "unmatchedSamples": [
+        "CMC-2WWDFV2: Power supply 1 failed.",
+        "CMC-2WWDFV2: Power supply redundancy is lost.",
+        "CMC-2WWDFV2: The power input for power supply 1 is lost.",
+        "CMC-2WWDFV2: Power supply 2 failed.",
+        "CMC-2WWDFV2: The power input for power supply 2 is lost."
+      ]
+    },
+    {
+      "name": "h-esx-04.intern.levigo.de",
+      "tickets2025": 17,
+      "matched": 17,
+      "matchRate": 100.0,
+      "services": [
+        {
+          "name": "Managed Infrastruktur",
+          "count": 17
+        }
+      ],
+      "types": {
+        "Service Request": 17
+      },
+      "unmatchedSamples": []
+    },
+    {
+      "name": "c-esx-01.intern.levigo.de",
+      "tickets2025": 16,
+      "matched": 16,
+      "matchRate": 100.0,
+      "services": [
+        {
+          "name": "Managed Infrastruktur",
+          "count": 16
+        }
+      ],
+      "types": {
+        "Service Request": 15,
+        "Incident": 1
+      },
+      "unmatchedSamples": []
+    },
+    {
+      "name": "Ganter",
+      "tickets2025": 15,
+      "matched": 5,
+      "matchRate": 33.3,
+      "services": [
+        {
+          "name": "Managed Backup & DR",
+          "count": 4
+        },
+        {
+          "name": "Managed Microsoft 365",
+          "count": 1
+        }
+      ],
+      "types": {
+        "Service Request": 14,
+        "Incident": 1
+      },
+      "unmatchedSamples": [
+        "Ganter: Rechner von Herr Hauff einrichten",
+        "Ganter: Lexware DB Aktualisierung",
+        "Ganter: Windows-Anmeldung Hr. Siegle funktioniert nicht",
+        "Ganter: SRVTS Server Neustart",
+        "Ganter: Taifun "
+      ]
+    },
+    {
+      "name": "Across",
+      "tickets2025": 15,
+      "matched": 6,
+      "matchRate": 40.0,
+      "services": [
+        {
+          "name": "Managed Infrastruktur",
+          "count": 3
+        },
+        {
+          "name": "Managed Backup & DR",
+          "count": 2
+        },
+        {
+          "name": "Managed Monitoring",
+          "count": 1
+        }
+      ],
+      "types": {
+        "Service Request": 1,
+        "Callback": 1,
+        "Incident": 2,
+        "Sub-Task": 10,
+        "Projekt": 1
+      },
+      "unmatchedSamples": [
+        "Across: Kundenportal VM zum Testen bereitstellen",
+        "Across: Herr Barrein",
+        "Across: Hardware vor Ort einbauen und verkabeln",
+        "Across: Dokumentation",
+        "Across: SafeGuarded Copy einrichten für zusätzlichen Schutz"
+      ]
+    },
+    {
+      "name": "TCON",
+      "tickets2025": 15,
+      "matched": 15,
+      "matchRate": 100.0,
+      "services": [
+        {
+          "name": "Managed Monitoring",
+          "count": 12
+        },
+        {
+          "name": "Managed Backup & DR",
+          "count": 3
+        }
+      ],
+      "types": {
+        "Service Request": 11,
+        "Incident": 3,
+        "Change": 1
+      },
+      "unmatchedSamples": []
+    },
+    {
+      "name": "Joma",
+      "tickets2025": 15,
+      "matched": 7,
+      "matchRate": 46.7,
+      "services": [
+        {
+          "name": "Service Desk",
+          "count": 5
+        },
+        {
+          "name": "Managed Backup & DR",
+          "count": 1
+        },
+        {
+          "name": "Managed Infrastruktur",
+          "count": 1
+        }
+      ],
+      "types": {
+        "Incident": 1,
+        "Sub-Task": 11,
+        "Anfahrt": 2,
+        "Projekt": 1
+      },
+      "unmatchedSamples": [
+        "Joma: LEDs auf den beiden Power-Systemen leuchten wg. abgelaufenen UAK",
+        "Joma: Dokumentation",
+        "Joma: Projektleitung",
+        "Joma: Installation der ESX-Server",
+        "Joma: Einrichtung SafeGuarded Copy für FS5300 und weitere Arbeiten"
+      ]
+    },
+    {
+      "name": "SRV-ESX03",
+      "tickets2025": 14,
+      "matched": 8,
+      "matchRate": 57.1,
+      "services": [
+        {
+          "name": "Managed Infrastruktur",
+          "count": 8
+        }
+      ],
+      "types": {
+        "Service Request": 14
+      },
+      "unmatchedSamples": [
+        "SRV-ESX03: Power supply redundancy is lost.",
+        "SRV-ESX03: The Power Supply Unit (PSU) 2 is not receiving input power because of issues in PSU or cable connections.",
+        "SRV-ESX03: Power supply redundancy is lost.",
+        "SRV-ESX03: User root via IP 10.168.17.166 requested state / configuration change to Alert Configuration using GUI.",
+        "SRV-ESX03: Successfully logged in using root, from 10.168.17.166 and GUI."
+      ]
+    },
+    {
+      "name": "Ensinger",
+      "tickets2025": 14,
+      "matched": 0,
+      "matchRate": 0.0,
+      "services": [],
+      "types": {
+        "Service Request": 12,
+        "Change": 2
+      },
+      "unmatchedSamples": [
+        "Ensinger: Bestandsversorgung levigo - Testdaten",
+        "Ensinger: Datenpflege 2025-09",
+        "Ensinger: Datenbereitstellung für Smartcommerce",
+        "Ensinger: Export Admin-Tabellen",
+        "Ensinger: DNS Zone"
+      ]
+    },
+    {
+      "name": "FACON",
+      "tickets2025": 14,
+      "matched": 2,
+      "matchRate": 14.3,
+      "services": [
+        {
+          "name": "Managed Backup & DR",
+          "count": 2
+        }
+      ],
+      "types": {
+        "Service Request": 6,
+        "Incident": 2,
+        "Change": 6
+      },
+      "unmatchedSamples": [
+        "FACON: Dev/Web Server nicht erreichbar",
+        "FACON: Server get-fm /var",
+        "FACON: get-fm.software - Memory Utilization (91%)",
+        "FACON: Update von phpMyAdmin auf allen Servern",
+        "FACON: dev.get-fm.software Aktualisierung MariaDB"
+      ]
+    },
+    {
+      "name": "Adrex",
+      "tickets2025": 13,
+      "matched": 7,
+      "matchRate": 53.8,
+      "services": [
+        {
+          "name": "Managed Infrastruktur",
+          "count": 3
+        },
+        {
+          "name": "Managed Backup & DR",
+          "count": 2
+        },
+        {
+          "name": "levigo Internet-Services",
+          "count": 1
+        },
+        {
+          "name": "Managed MS Exchange Server",
+          "count": 1
+        }
+      ],
+      "types": {
+        "Service Request": 8,
+        "Change": 1,
+        "Incident": 4
+      },
+      "unmatchedSamples": [
+        "Adrex: time Card / Reiner neu starten",
+        "Adrex: Lizenz vergeben",
+        "Adrex: Admin Zugangsdaten",
+        "Adrex: Emails werden nicht zugestellt",
+        "Adrex: Postfachzugriff"
+      ]
+    },
+    {
+      "name": "Herion",
+      "tickets2025": 13,
+      "matched": 5,
+      "matchRate": 38.5,
+      "services": [
+        {
+          "name": "Managed Backup & DR",
+          "count": 3
+        },
+        {
+          "name": "Managed Networking (WLAN)",
+          "count": 1
+        },
+        {
+          "name": "Managed Monitoring",
+          "count": 1
+        }
+      ],
+      "types": {
+        "Service Request": 10,
+        "Incident": 3
+      },
+      "unmatchedSamples": [
+        "Herion: Installation Bartender",
+        "Herion: Installation Lexware",
+        "Herion: MFA",
+        "Herion: Bandsicherung",
+        "Herion: Bandsicherung"
+      ]
+    },
+    {
+      "name": "FONTIS",
+      "tickets2025": 13,
+      "matched": 13,
+      "matchRate": 100.0,
+      "services": [
+        {
+          "name": "Managed Backup & DR",
+          "count": 6
+        },
+        {
+          "name": "Managed Infrastruktur",
+          "count": 4
+        },
+        {
+          "name": "Managed Monitoring",
+          "count": 2
+        },
+        {
+          "name": "Managed Windows Server & AD",
+          "count": 1
+        }
+      ],
+      "types": {
+        "Service Request": 4,
+        "Incident": 8,
+        "Change": 1
+      },
+      "unmatchedSamples": []
+    },
+    {
+      "name": "BAK01",
+      "tickets2025": 13,
+      "matched": 0,
+      "matchRate": 0.0,
+      "services": [],
+      "types": {
+        "Service Request": 11,
+        "Incident": 2
+      },
+      "unmatchedSamples": [
+        "BAK01: Drive 14 is removed from disk drive bay 1.",
+        "BAK01: Disk 14 in Backplane 1 of Integrated RAID Controller 1 is removed.",
+        "BAK01: Fault detected on drive 14 in disk drive bay 1.",
+        "BAK01: Fault detected on drive 14 in disk drive bay 1.",
+        "BAK01: Redundancy of Virtual Disk 0 on Integrated RAID Controller 1 has degraded."
+      ]
+    },
+    {
+      "name": "PMB",
+      "tickets2025": 12,
+      "matched": 5,
+      "matchRate": 41.7,
+      "services": [
+        {
+          "name": "levigo vDC",
+          "count": 2
+        },
+        {
+          "name": "Managed MS Exchange Server",
+          "count": 2
+        },
+        {
+          "name": "Managed Networking (LAN)",
+          "count": 1
+        }
+      ],
+      "types": {
+        "Service Request": 6,
+        "Change with Approval": 1,
+        "Change": 2,
+        "Incident": 3
+      },
+      "unmatchedSamples": [
+        "PMB: Die VM SM01 zurücksetzen und wieder aufsetzen",
+        "PMB: CPU und RAM erhöhen",
+        "PMB: Clientregistrierung auf NetPhone Server VOIP01 funktioniert wieder nicht",
+        "PMB: Berechtigung SSH-Zugang",
+        "PMB: NetPhone Server VOIP01"
+      ]
+    },
+    {
+      "name": "LMS",
+      "tickets2025": 11,
+      "matched": 0,
+      "matchRate": 0.0,
+      "services": [],
+      "types": {
+        "Change": 8,
+        "Service Request": 3
+      },
+      "unmatchedSamples": [
+        "LMS: Landesmesse Kommunikation Oktober 2025",
+        "LMS: Landesmesse Kommunikation September 2025",
+        "LMS: Landesmesse Kommunikation August 2025",
+        "LMS: Landesmesse Kommunikation Juli 2025",
+        "LMS: Landesmesse Kommunikation Juni 2025"
+      ]
+    },
+    {
+      "name": "Eberle-Hald",
+      "tickets2025": 11,
+      "matched": 11,
+      "matchRate": 100.0,
+      "services": [
+        {
+          "name": "Managed Monitoring",
+          "count": 9
+        },
+        {
+          "name": "Managed Infrastruktur",
+          "count": 2
+        }
+      ],
+      "types": {
+        "Service Request": 10,
+        "Incident": 1
+      },
+      "unmatchedSamples": []
+    },
+    {
+      "name": "h-esx-03.intern.levigo.de",
+      "tickets2025": 11,
+      "matched": 11,
+      "matchRate": 100.0,
+      "services": [
+        {
+          "name": "Managed Infrastruktur",
+          "count": 11
+        }
+      ],
+      "types": {
+        "Service Request": 11
+      },
+      "unmatchedSamples": []
+    },
+    {
+      "name": "c-esx-04.intern.levigo.de",
+      "tickets2025": 10,
+      "matched": 10,
+      "matchRate": 100.0,
+      "services": [
+        {
+          "name": "Managed Infrastruktur",
+          "count": 10
+        }
+      ],
+      "types": {
+        "Service Request": 10
+      },
+      "unmatchedSamples": []
+    },
+    {
+      "name": "SOWITEC",
+      "tickets2025": 9,
+      "matched": 3,
+      "matchRate": 33.3,
+      "services": [
+        {
+          "name": "Managed Monitoring",
+          "count": 3
+        }
+      ],
+      "types": {
+        "Change": 2,
+        "Service Request": 5,
+        "Incident": 2
+      },
+      "unmatchedSamples": [
+        "SOWITEC: Einrichtung Weiterleitung auf dem Reverse Proxy",
+        "SOWITEC: Sicherheitslücken auf 83.243.43.161",
+        "SOWITEC: Umstellung 3CX auf Let's Encrypt",
+        "SOWITEC: Ablösung TLS-Zertifikat *.sowitec.com",
+        "SOWITEC: SDC1-S-WMM-001: Kein Dateneingang von Sodar Daten"
+      ]
+    },
+    {
+      "name": "HMR",
+      "tickets2025": 9,
+      "matched": 6,
+      "matchRate": 66.7,
+      "services": [
+        {
+          "name": "Managed Backup & DR",
+          "count": 3
+        },
+        {
+          "name": "levigo Internet-Services",
+          "count": 1
+        },
+        {
+          "name": "Managed Monitoring",
+          "count": 1
+        },
+        {
+          "name": "Managed MS Exchange Server",
+          "count": 1
+        }
+      ],
+      "types": {
+        "Incident": 2,
+        "Service Request": 7
+      },
+      "unmatchedSamples": [
+        "HMR: Defekte HDD und CMOS battery low",
+        "HMR: PSKs werden nicht zuverlässig über GPO ausgerollt",
+        "HMR: Mails wiederherstellen"
+      ]
+    },
+    {
+      "name": "LEOGY",
+      "tickets2025": 8,
+      "matched": 0,
+      "matchRate": 0.0,
+      "services": [],
+      "types": {
+        "Service Request": 8
+      },
+      "unmatchedSamples": [
+        "LEOGY: VWFS November 2025 (PP5006/45 25-Q4-IH-IOIS-EXT1 IH-IOIS-11 GDC Next - CZ Support IBM i)",
+        "LEOGY: VWFS Oktober 2025 (PP5006/45 25-Q4-IH-IOIS-EXT1 IH-IOIS-11 GDC Next - CZ Support IBM i)",
+        "LEOGY: VWFS September 2025 (PP5006/45 25-Q3-IH-IOIS-EXT1 IH-IOIS-11 GDC Next - CZ Support IBM i)",
+        "LEOGY: VWFS August 2025 (PP5006/45 25-Q3-IH-IOIS-EXT1 IH-IOIS-11 GDC Next - CZ Support IBM i)",
+        "LEOGY: VWFS Juli 2025 (PP5006/45 25-Q3-IH-IOIS-EXT1 IH-IOIS-11 GDC Next - CZ Support IBM i)"
+      ]
+    },
+    {
+      "name": "Sowitec",
+      "tickets2025": 8,
+      "matched": 5,
+      "matchRate": 62.5,
+      "services": [
+        {
+          "name": "Managed Baramundi",
+          "count": 3
+        },
+        {
+          "name": "Managed Monitoring",
+          "count": 1
+        },
+        {
+          "name": "Managed Citrix",
+          "count": 1
+        }
+      ],
+      "types": {
+        "Service Request": 4,
+        "Change with Approval": 2,
+        "Change": 1,
+        "Incident": 1
+      },
+      "unmatchedSamples": [
+        "Sowitec: DUO Aktivierungscode",
+        "Sowitec: MS-ST-IT-01.ds1.sowitec.com error from central bakery",
+        "Sowitec: DNS Record hinzufügen"
+      ]
+    },
+    {
+      "name": "Strecker",
+      "tickets2025": 8,
+      "matched": 5,
+      "matchRate": 62.5,
+      "services": [
+        {
+          "name": "Service Desk",
+          "count": 1
+        },
+        {
+          "name": "Managed Networking (LAN)",
+          "count": 1
+        },
+        {
+          "name": "Managed MS Exchange Server",
+          "count": 1
+        },
+        {
+          "name": "Managed Citrix",
+          "count": 1
+        },
+        {
+          "name": "Managed Microsoft 365",
+          "count": 1
+        }
+      ],
+      "types": {
+        "Anfahrt": 1,
+        "Service Request": 4,
+        "Change": 1,
+        "Incident": 1,
+        "Projekt": 1
+      },
+      "unmatchedSamples": [
+        "Strecker: Action Required: Before you can upgrade to SFOS 22.0 and later   - X13109HVVHDQF8F (localhost)",
+        "Strecker: FW-Konfig für Zeiterfassung",
+        "Strecker: Kassen PCs einrichten"
+      ]
+    },
+    {
+      "name": "UPS",
+      "tickets2025": 8,
+      "matched": 0,
+      "matchRate": 0.0,
+      "services": [],
+      "types": {
+        "Service Request": 8
+      },
+      "unmatchedSamples": [
+        "UPS: An input voltage or frequency problem no longer prevents switching to b...",
+        "UPS: Bypass not in range ; either frequency or voltage.",
+        "UPS: An input voltage or frequency problem no longer prevents switching to b...",
+        "UPS: Bypass not in range ; either frequency or voltage.",
+        "UPS: An input voltage or frequency problem no longer prevents switching to b..."
+      ]
+    },
+    {
+      "name": "Mon",
+      "tickets2025": 8,
+      "matched": 2,
+      "matchRate": 25.0,
+      "services": [
+        {
+          "name": "Managed Backup & DR",
+          "count": 1
+        },
+        {
+          "name": "Managed Monitoring",
+          "count": 1
+        }
+      ],
+      "types": {
+        "Incident": 8
+      },
+      "unmatchedSamples": [
+        "Mon: TServer05.goehrum.de / TServer02.goehrum.de / Schnittstelle1.goehrum.de /Batchserver2.goehrum.de CRIT",
+        "Mon: Host srv-appl-fs.intern.isp-strahlentherapie.de CRIT",
+        "Mon: VM-HYD-TER1.hydrobar2003.intern CRIT",
+        "Mon: RZ-VA-DB.intern.isp-strahlentherapie.de CRIT",
+        "Mon: SRV-TSE-EXT-02.intern.isp-strahlentherapie.de CRIT"
+      ]
+    },
+    {
+      "name": "Jehle",
+      "tickets2025": 7,
+      "matched": 4,
+      "matchRate": 57.1,
+      "services": [
+        {
+          "name": "Service Desk",
+          "count": 2
+        },
+        {
+          "name": "Managed Backup & DR",
+          "count": 2
+        }
+      ],
+      "types": {
+        "Service Request": 3,
+        "Incident": 2,
+        "Change": 2
+      },
+      "unmatchedSamples": [
+        "Jehle: Notebook Hanna startet nicht mehr.",
+        "Jehle: 2 weitere Benutzer in nextcloud + Übersicht",
+        "Jehle: Nextcloud - neuer Benutzer"
+      ]
+    },
+    {
+      "name": "AUTO-GRAYLOG",
+      "tickets2025": 7,
+      "matched": 7,
+      "matchRate": 100.0,
+      "services": [
+        {
+          "name": "Managed Infrastruktur",
+          "count": 7
+        }
+      ],
+      "types": {
+        "Service Request": 7
+      },
+      "unmatchedSamples": []
+    },
+    {
+      "name": "Bort",
+      "tickets2025": 7,
+      "matched": 3,
+      "matchRate": 42.9,
+      "services": [
+        {
+          "name": "Managed MS Exchange Server",
+          "count": 2
+        },
+        {
+          "name": "Service Desk",
+          "count": 1
+        }
+      ],
+      "types": {
+        "Incident": 3,
+        "Service Request": 3,
+        "Anfahrt": 1
+      },
+      "unmatchedSamples": [
+        "Bort: ARM Server crasht permanent",
+        "Bort: Solarwinds ARM Berechtigungen nur für eine Domäne",
+        "Bort: TS4300 Library Drive defekt.",
+        "Bort: Unterstützung Einrichtung neues AD + Anbindung existierendes Entra"
+      ]
+    },
+    {
+      "name": "IBM",
+      "tickets2025": 6,
+      "matched": 0,
+      "matchRate": 0.0,
+      "services": [],
+      "types": {
+        "Sub-Task": 2,
+        "Task": 1,
+        "Incident": 1,
+        "Service Request": 2
+      },
+      "unmatchedSamples": [
+        "IBM: Lieferung der HSMs von MUC nach NUE",
+        "IBM: SFP Module für HSMs beschaffen",
+        "IBM: UTIMACO Try & Buy HSMs - MUC - CS0104608",
+        "IBM: Generelle Probleme mit FixCentral",
+        "IBM: eRP PU - NUE activities"
+      ]
+    },
+    {
+      "name": "S-IT",
+      "tickets2025": 6,
+      "matched": 0,
+      "matchRate": 0.0,
+      "services": [],
+      "types": {
+        "Service Request": 5,
+        "Sub-Task": 1
+      },
+      "unmatchedSamples": [
+        "S-IT: Ankündigung Wartungsarbeiten",
+        "S-IT: Ankündigung Wartungsarbeiten",
+        "S-IT: Ankündigung Wartungsarbeiten",
+        "S-IT: Ankündigung Wartungsarbeiten",
+        "S-IT: Ankündigung Wartungsarbeiten am 31.01.2025 03:00 bis 06:00"
+      ]
+    },
+    {
+      "name": "barcon2Server.BARCONTROL2.local",
+      "tickets2025": 6,
+      "matched": 0,
+      "matchRate": 0.0,
+      "services": [],
+      "types": {
+        "Service Request": 6
+      },
+      "unmatchedSamples": [
+        "barcon2Server.BARCONTROL2.local: The Patrol Read operation completed for RAID Controller in Slot 2.",
+        "barcon2Server.BARCONTROL2.local: A Patrol Read operation started for RAID Controller in Slot 2.",
+        "barcon2Server.BARCONTROL2.local: The Patrol Read operation completed for RAID Controller in Slot 2.",
+        "barcon2Server.BARCONTROL2.local: A Patrol Read operation started for RAID Controller in Slot 2.",
+        "barcon2Server.BARCONTROL2.local: The Patrol Read operation completed for RAID Controller in Slot 2."
+      ]
+    },
+    {
+      "name": "h-esx-02.intern.levigo.de",
+      "tickets2025": 6,
+      "matched": 6,
+      "matchRate": 100.0,
+      "services": [
+        {
+          "name": "Managed Infrastruktur",
+          "count": 6
+        }
+      ],
+      "types": {
+        "Service Request": 6
+      },
+      "unmatchedSamples": []
+    },
+    {
+      "name": "solutions",
+      "tickets2025": 5,
+      "matched": 3,
+      "matchRate": 60.0,
+      "services": [
+        {
+          "name": "levigo CCP",
+          "count": 1
+        },
+        {
+          "name": "Managed Backup & DR",
+          "count": 1
+        },
+        {
+          "name": "Managed Openshift",
+          "count": 1
+        }
+      ],
+      "types": {
+        "Service Request": 3,
+        "Change": 2
+      },
+      "unmatchedSamples": [
+        "solutions: Plattenplatz ida-server.intern.levigo.de vergrößern",
+        "solutions: rodeos & minions nicht erreichbar & gru außer Betrieb nehmen"
+      ]
+    },
+    {
+      "name": "Zweygart",
+      "tickets2025": 5,
+      "matched": 0,
+      "matchRate": 0.0,
+      "services": [],
+      "types": {
+        "Service Request": 5
+      },
+      "unmatchedSamples": [
+        "Zweygart: Kohlhammer: unser neuer GPG-Schlüssel für Ihre Datenübertragungen (Fa. Levigo) an uns",
+        "Zweygart: Zur Erneuerung anstehende Domains - Zweygart - Liste vom: 2025-09-01",
+        "Zweygart: Änderung DNS Eintrage für zweygart.de",
+        "Zweygart: Neue Kollege ",
+        "Zweygart: DNS-Eintrag für Zweygart.de"
+      ]
+    },
+    {
+      "name": "Eichler",
+      "tickets2025": 5,
+      "matched": 2,
+      "matchRate": 40.0,
+      "services": [
+        {
+          "name": "Managed Networking (WLAN)",
+          "count": 1
+        },
+        {
+          "name": "Managed MS Exchange Server",
+          "count": 1
+        }
+      ],
+      "types": {
+        "Service Request": 4,
+        "Change": 1
+      },
+      "unmatchedSamples": [
+        "Eichler: Probleme bei der Serververbindung Fräserei",
+        "Eichler: Update-Benachrichtigung und Feature CAM 2019",
+        "Eichler: eichler-holzaepfel.de Umstellung PHP Version"
+      ]
+    },
+    {
+      "name": "Beck",
+      "tickets2025": 5,
+      "matched": 4,
+      "matchRate": 80.0,
+      "services": [
+        {
+          "name": "Managed Monitoring",
+          "count": 1
+        },
+        {
+          "name": "Service Desk",
+          "count": 1
+        },
+        {
+          "name": "Managed Backup & DR",
+          "count": 1
+        },
+        {
+          "name": "Managed MS Exchange Server",
+          "count": 1
+        }
+      ],
+      "types": {
+        "Service Request": 2,
+        "Anfahrt": 1,
+        "Incident": 1,
+        "Projekt": 1
+      },
+      "unmatchedSamples": [
+        "Beck: Tastatur-Layout verstellt"
+      ]
+    },
+    {
+      "name": "WaF",
+      "tickets2025": 5,
+      "matched": 2,
+      "matchRate": 40.0,
+      "services": [
+        {
+          "name": "levigo Internet-Services",
+          "count": 1
+        },
+        {
+          "name": "Service Desk",
+          "count": 1
+        }
+      ],
+      "types": {
+        "Incident": 2,
+        "Service Request": 3
+      },
+      "unmatchedSamples": [
+        "WaF: SPF-Einstellungen prüfen",
+        "WaF: Der Termin bzgl Monitoren",
+        "WaF: Einstellungen Bildschirme "
+      ]
+    },
+    {
+      "name": "LRABB",
+      "tickets2025": 5,
+      "matched": 0,
+      "matchRate": 0.0,
+      "services": [],
+      "types": {
+        "Service Request": 4,
+        "Change": 1
+      },
+      "unmatchedSamples": [
+        "LRABB: Installation Virenscanner auf Qanteon-Server",
+        "LRABB: Nextcloud Update auf Version 31",
+        "LRABB: Nextcloud MFA / SSO",
+        "LRABB: nextCloud",
+        "LRABB: Fehler bei Nextcloud Update"
+      ]
+    },
+    {
+      "name": "DMTpe",
+      "tickets2025": 5,
+      "matched": 1,
+      "matchRate": 20.0,
+      "services": [
+        {
+          "name": "Managed Firewall",
+          "count": 1
+        }
+      ],
+      "types": {
+        "Incident": 1,
+        "Service Request": 3,
+        "Projekt": 1
+      },
+      "unmatchedSamples": [
+        "DMTpe: Skript für Win11 Upgrade",
+        "DMTpe: Updateringe",
+        "DMTpe: Liste aller Software",
+        "DMTpe: MS365"
+      ]
+    },
+    {
+      "name": "EKZ",
+      "tickets2025": 5,
+      "matched": 0,
+      "matchRate": 0.0,
+      "services": [],
+      "types": {
+        "Service Request": 5
+      },
+      "unmatchedSamples": [
+        "EKZ: Data collector interruption for IBM Storage Insights",
+        "EKZ: Data collector interruption for IBM Storage Insights",
+        "EKZ: Hilfe mit Wiederherstellung von Bibliotheken",
+        "EKZ: Downtime des IBM-I Systems wegen Storage Backplane notwendig",
+        "EKZ: neustart des IBM-I Systems wegen abnormalen Job"
+      ]
+    },
+    {
+      "name": "Hecker",
+      "tickets2025": 5,
+      "matched": 0,
+      "matchRate": 0.0,
+      "services": [],
+      "types": {
+        "Incident": 3,
+        "Service Request": 2
+      },
+      "unmatchedSamples": [
+        "Hecker: Ausgehende Mails kommen nicht bei Kunden an",
+        "Hecker: ESX02 \"hebt\" ab, Lüfter drehen immer wieder extrem hoch",
+        "Hecker: Zurückgewiesene Mails von icloud",
+        "Hecker: Internet-Server VM mit 100% CPU Lasten",
+        "Hecker: Restore einer Datei aus dem IFS hat nicht funktioniert"
+      ]
+    },
+    {
+      "name": "Wohlhaupter",
+      "tickets2025": 5,
+      "matched": 4,
+      "matchRate": 80.0,
+      "services": [
+        {
+          "name": "Service Desk",
+          "count": 4
+        }
+      ],
+      "types": {
+        "Anfahrt": 4,
+        "Sub-Task": 1
+      },
+      "unmatchedSamples": [
+        "Wohlhaupter: Installation und Migration IBM i"
+      ]
+    }
+  ],
+  "projectProfiles": [
+    {
+      "name": "LSDX",
+      "tickets2025": 8104,
+      "matched": 5025,
+      "matchRate": 62.0,
+      "services": [
+        {
+          "name": "Managed Infrastruktur",
+          "count": 1791
+        },
+        {
+          "name": "Managed Backup & DR",
+          "count": 1425
+        },
+        {
+          "name": "Managed Monitoring",
+          "count": 644
+        },
+        {
+          "name": "Service Desk",
+          "count": 212
+        },
+        {
+          "name": "Managed MS Exchange Server",
+          "count": 179
+        },
+        {
+          "name": "Managed Windows Server & AD",
+          "count": 108
+        },
+        {
+          "name": "Managed Cryptshare",
+          "count": 105
+        },
+        {
+          "name": "Managed Citrix",
+          "count": 86
+        },
+        {
+          "name": "Managed Microsoft 365",
+          "count": 74
+        },
+        {
+          "name": "Managed Firewall",
+          "count": 58
+        },
+        {
+          "name": "levigo Internet-Services",
+          "count": 54
+        },
+        {
+          "name": "Managed Networking (LAN)",
+          "count": 44
+        },
+        {
+          "name": "Managed Endpointsecurity",
+          "count": 34
+        },
+        {
+          "name": "Managed Networking (WLAN)",
+          "count": 33
+        },
+        {
+          "name": "levigo CCP",
+          "count": 28
+        }
+      ],
+      "types": {
+        "Change": 505,
+        "Sub-Task": 81,
+        "Service Request": 6152,
+        "Incident": 1256,
+        "Anfahrt": 89,
+        "Change with Approval": 8,
+        "Callback": 13
+      },
+      "topCustomers": [
+        {
+          "name": "Baresel",
+          "count": 851
+        },
+        {
+          "name": "DMT",
+          "count": 362
+        },
+        {
+          "name": "ACPS",
+          "count": 312
+        },
+        {
+          "name": "n-esx-04.intern.levigo.de",
+          "count": 106
+        },
+        {
+          "name": "Bebion",
+          "count": 96
+        },
+        {
+          "name": "systems",
+          "count": 88
+        },
+        {
+          "name": "levigo-Mon",
+          "count": 81
+        },
+        {
+          "name": "RolfBenz",
+          "count": 63
+        },
+        {
+          "name": "n-esx-07.intern.levigo.de",
+          "count": 63
+        },
+        {
+          "name": "ISP",
+          "count": 57
+        },
+        {
+          "name": "SBS",
+          "count": 55
+        },
+        {
+          "name": "Fontis",
+          "count": 47
+        },
+        {
+          "name": "h-esx-01.intern.levigo.de",
+          "count": 38
+        },
+        {
+          "name": "ADREX",
+          "count": 35
+        },
+        {
+          "name": "BARCON2SERVER.BARCONTROL2.local",
+          "count": 32
+        },
+        {
+          "name": "Salm",
+          "count": 30
+        },
+        {
+          "name": "n-esx-06.intern.levigo.de",
+          "count": 30
+        },
+        {
+          "name": "Lohnpack",
+          "count": 26
+        },
+        {
+          "name": "ESXPSFR04.befine.local",
+          "count": 25
+        },
+        {
+          "name": "HERION-BAK01",
+          "count": 24
+        }
+      ],
+      "monthly": {
+        "2025-01": 761,
+        "2025-02": 822,
+        "2025-03": 858,
+        "2025-04": 683,
+        "2025-05": 761,
+        "2025-06": 682,
+        "2025-07": 802,
+        "2025-08": 887,
+        "2025-09": 836,
+        "2025-10": 974,
+        "2025-11": 31,
+        "2025-12": 7
+      }
+    },
+    {
+      "name": "SXPP",
+      "tickets2025": 292,
+      "matched": 107,
+      "matchRate": 36.6,
+      "services": [
+        {
+          "name": "Service Desk",
+          "count": 23
+        },
+        {
+          "name": "Managed Microsoft 365",
+          "count": 19
+        },
+        {
+          "name": "Managed MS Exchange Server",
+          "count": 16
+        },
+        {
+          "name": "Managed Backup & DR",
+          "count": 14
+        },
+        {
+          "name": "Managed Infrastruktur",
+          "count": 12
+        },
+        {
+          "name": "Managed Windows Server & AD",
+          "count": 4
+        },
+        {
+          "name": "Managed Networking (LAN)",
+          "count": 3
+        },
+        {
+          "name": "levigo managed.archive",
+          "count": 2
+        },
+        {
+          "name": "Managed Citrix",
+          "count": 2
+        },
+        {
+          "name": "levigo CCP",
+          "count": 2
+        },
+        {
+          "name": "levigo vDC",
+          "count": 2
+        },
+        {
+          "name": "Managed Monitoring",
+          "count": 2
+        },
+        {
+          "name": "Kaspersky aaS",
+          "count": 2
+        },
+        {
+          "name": "levigo Internet-Services",
+          "count": 1
+        },
+        {
+          "name": "Managed MS SQL Server",
+          "count": 1
+        }
+      ],
+      "types": {
+        "Sub-Task": 260,
+        "Projekt": 20,
+        "Anfahrt": 12
+      },
+      "topCustomers": [
+        {
+          "name": "Joma",
+          "count": 14
+        },
+        {
+          "name": "Across",
+          "count": 11
+        },
+        {
+          "name": "Wohlhaupter",
+          "count": 5
+        },
+        {
+          "name": "TNBW",
+          "count": 4
+        },
+        {
+          "name": "BARESEL",
+          "count": 2
+        },
+        {
+          "name": "Salm",
+          "count": 2
+        },
+        {
+          "name": "Strecker",
+          "count": 1
+        },
+        {
+          "name": "S-IT",
+          "count": 1
+        },
+        {
+          "name": "Beck",
+          "count": 1
+        },
+        {
+          "name": "Fasanenhof",
+          "count": 1
+        },
+        {
+          "name": "Klettner",
+          "count": 1
+        },
+        {
+          "name": "DMTpe",
+          "count": 1
+        },
+        {
+          "name": "HERION",
+          "count": 1
+        },
+        {
+          "name": "Bort",
+          "count": 1
+        },
+        {
+          "name": "PBK",
+          "count": 1
+        },
+        {
+          "name": "IDE",
+          "count": 1
+        }
+      ],
+      "monthly": {
+        "2025-01": 15,
+        "2025-02": 38,
+        "2025-03": 15,
+        "2025-04": 53,
+        "2025-05": 31,
+        "2025-06": 64,
+        "2025-07": 8,
+        "2025-08": 6,
+        "2025-09": 14,
+        "2025-10": 10,
+        "2025-11": 20,
+        "2025-12": 18
+      }
+    },
+    {
+      "name": "IEO",
+      "tickets2025": 67,
+      "matched": 16,
+      "matchRate": 23.9,
+      "services": [
+        {
+          "name": "Service Desk",
+          "count": 15
+        },
+        {
+          "name": "Managed Networking (LAN)",
+          "count": 1
+        }
+      ],
+      "types": {
+        "Task": 43,
+        "Sub-Task": 24
+      },
+      "topCustomers": [
+        {
+          "name": "IBM",
+          "count": 3
+        },
+        {
+          "name": "EPA",
+          "count": 1
+        },
+        {
+          "name": "ePA",
+          "count": 1
+        }
+      ],
+      "monthly": {
+        "2025-02": 4,
+        "2025-03": 12,
+        "2025-04": 6,
+        "2025-05": 4,
+        "2025-06": 10,
+        "2025-07": 4,
+        "2025-08": 7,
+        "2025-09": 3,
+        "2025-10": 2,
+        "2025-11": 6,
+        "2025-12": 9
+      }
+    }
+  ],
+  "meta": {
+    "year": 2025,
+    "totalTickets": 8463,
+    "totalCustomers": 71,
+    "totalProjects": 3,
+    "overallMatchRate": 83.0
+  }
+}
