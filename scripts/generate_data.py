@@ -118,10 +118,7 @@ def load_units():
 
 # ── Matching ──
 
-def build_matchers(services):
-    """Build regex matchers for service names with aliases."""
-    # Aliases: additional patterns that match to a service
-    ALIASES = {
+ALIASES = {
         "Managed Infrastruktur": [r"infrastruktur", r"infra\b",
                                    # VMware / ESX / vCenter alerts
                                    r"esx-\d+", r"vCenter", r"vmware", r"\.vmx\b",
@@ -212,9 +209,11 @@ def build_matchers(services):
         "managed.backup für M365": [r"backup.*M365", r"M365.*backup", r"backup.*microsoft.*365"],
         "Cyber Risiko Check (nach DIN Spec 27076)": [r"cyber.*risiko", r"DIN.*27076"],
         "vCIO": [r"\bvCIO\b"],
-        "levigo Internet-Services": [r"VPN\b", r"Internet.*Service"],
-    }
+    "levigo Internet-Services": [r"VPN\b", r"Internet.*Service"],
+}
 
+def build_matchers(services):
+    """Build regex matchers for service names with aliases."""
     matchers = []
     for name in services:
         # Primary: exact service name
@@ -846,6 +845,159 @@ def analyze(tickets, services, sales, staff_list, units_list):
         if svc:
             blocker_by_service[svc] += 1
 
+    # ── Methodology data ──
+    # Collect signal documentation for transparency view
+    service_matchers_doc = []
+    for name in sorted(services.keys()):
+        aliases = ALIASES.get(name, [])
+        tix_count = len(matched.get(name, []))
+        service_matchers_doc.append({
+            "service": name,
+            "tickets": tix_count,
+            "patterns": len(aliases) + 1,  # +1 for exact name match
+            "aliases": aliases[:5],  # top 5 for display
+            "signal": "exact_name + regex_aliases",
+        })
+    service_matchers_doc.sort(key=lambda x: -x["tickets"])
+
+    # Project category rules doc
+    proj_cat_doc = []
+    for cat_name, keywords in project_categories:
+        count = proj_by_category.get(cat_name, 0)
+        proj_cat_doc.append({
+            "category": cat_name,
+            "count": count,
+            "keywords": keywords[:8],
+            "signal": "keyword_in_summary",
+        })
+    proj_cat_doc.append({
+        "category": "Sonstiges",
+        "count": proj_by_category.get("Sonstiges", 0),
+        "keywords": [],
+        "signal": "manual_override + fallback",
+    })
+
+    # Customer extraction doc
+    cust_extracted = sum(1 for p in project_list if p["customer"])
+    cust_total = len(project_list)
+
+    # Hersteller category doc
+    herst_cat_doc = [{"category": cat, "members": names[:5], "count": len(names)}
+                     for cat, names in hersteller_categories.items()]
+
+    methodology = {
+        "pipelines": [
+            {
+                "id": "service_matching",
+                "name": "Service ↔ Ticket Matching",
+                "description": "Jira-Tickets werden via Regex-Pattern dem Coda-Servicekatalog zugeordnet",
+                "inputSources": ["Jira Export (53.737 Tickets)", "Coda Servicekatalog (64 Services)"],
+                "signal": "Summary + Description → Regex Match (längster Pattern zuerst)",
+                "steps": [
+                    "1. Service-Name als exakter Regex-Match",
+                    "2. Service-Aliases (Regex-Pattern pro Service)",
+                    "3. Sortierung: längster Pattern gewinnt (spezifischste Zuordnung)",
+                    "4. Erster Match gewinnt (kein Multi-Match)",
+                ],
+                "stats": {
+                    "matched": total_matched,
+                    "total": len(tickets),
+                    "rate": round(total_matched / len(tickets) * 100, 1),
+                    "servicesWithMatches": sum(1 for s in service_list if s["tickets"] > 0),
+                    "totalPatterns": sum(len(ALIASES.get(n, [])) + 1 for n in services),
+                },
+            },
+            {
+                "id": "project_categorization",
+                "name": "Projekt-Kategorisierung",
+                "description": "SXPP-Projekte werden anhand von Keywords in der Summary kategorisiert",
+                "inputSources": ["SXPP Jira-Projekt (137 Projekte)"],
+                "signal": "Summary.lower() → Keyword-Match (First-Match-Wins)",
+                "steps": [
+                    "1. Manuelle Overrides (17 Projekte mit eindeutiger Zuordnung)",
+                    "2. Keyword-Listen pro Kategorie (geordnet nach Spezifität)",
+                    "3. Erster Kategorie-Match gewinnt",
+                    "4. Fallback: 'Sonstiges'",
+                ],
+                "stats": {
+                    "categorized": sum(1 for p in project_list if p["category"] != "Sonstiges"),
+                    "total": len(project_list),
+                    "rate": round(sum(1 for p in project_list if p["category"] != "Sonstiges") / len(project_list) * 100, 1),
+                    "categories": len(proj_by_category),
+                    "manualOverrides": len(category_overrides),
+                },
+            },
+            {
+                "id": "customer_extraction",
+                "name": "Kunden-Extraktion",
+                "description": "Kundennamen werden aus dem Ticket-Summary-Prefix extrahiert",
+                "inputSources": ["Jira Ticket Summaries"],
+                "signal": "Regex: ^([Name]):  → Kundenname (exkl. System-Prefixe)",
+                "steps": [
+                    "1. Regex-Match auf 'Kundenname: Beschreibung'",
+                    "2. System-Prefixe ausfiltern (levigo-Mon, Check_MK, AUTO-GRAYLOG)",
+                    "3. ESX-Host-Pattern ausfiltern (a-esx-01)",
+                    "4. Prefixe > 25 Zeichen ignorieren",
+                ],
+                "stats": {
+                    "extracted": cust_extracted,
+                    "total": cust_total,
+                    "rate": round(cust_extracted / cust_total * 100, 1) if cust_total else 0,
+                    "uniqueCustomers": len(set(p["customer"] for p in project_list if p["customer"])),
+                    "totalFromTickets": len(customer_tickets),
+                },
+            },
+            {
+                "id": "hersteller_mapping",
+                "name": "Hersteller-Zuordnung",
+                "description": "ERP Hersteller-IDs werden zu Klartextnamen und Kategorien aufgelöst",
+                "inputSources": ["PBI ERP Legacy (Kosten-Tabelle)", "Kosten[Bezeichnung] Artikelbeschreibungen"],
+                "signal": "Hersteller-ID → Artikelbeschreibung → manuelles Mapping",
+                "steps": [
+                    "1. DAX-Query: Kosten[Hersteller] + Kosten[Bezeichnung] gruppiert",
+                    "2. Artikelbeschreibungen identifizieren Hersteller (z.B. 'Lenovo ThinkPad')",
+                    "3. Manuelles ID → Name Mapping (62 Einträge)",
+                    "4. Kategorisierung in 9+1 Gruppen (Hardware, Software, Security...)",
+                ],
+                "stats": {
+                    "manufacturers": len(hersteller_map),
+                    "articles": sum(h[1] for h in hersteller_map.values()),
+                    "categories": len(hersteller_categories),
+                },
+            },
+            {
+                "id": "revenue_mapping",
+                "name": "Revenue-Zuordnung",
+                "description": "ERP-Umsatzdaten nach Artikelgruppe/Kostengruppe aus PBI",
+                "inputSources": ["PBI eLSA Vollständig (V3 Deckungsbeitrag Views)"],
+                "signal": "DAX-Query → Artikelgruppe × Kostengruppe mit Umsatz + DB",
+                "steps": [
+                    "1. DAX-Query gegen V3 Deckungsbeitrag-Views",
+                    "2. Gruppierung nach Artikelgruppe (Internet, managed.cloud)",
+                    "3. Summe Umsatz, DB, Positionen pro Kostengruppe",
+                    "4. Statischer Snapshot (Stand: 2026-02-25)",
+                ],
+                "stats": {
+                    "revenueGroups": len(revenue_data),
+                    "totalRevenue": sum(r["umsatz"] for r in revenue_data),
+                    "totalDB": sum(r["db"] for r in revenue_data),
+                },
+            },
+        ],
+        "serviceMatchers": service_matchers_doc[:30],  # Top 30 for display
+        "projectCategories": proj_cat_doc,
+        "herstellerCategories": herst_cat_doc,
+        "dataSources": [
+            {"name": "Jira Export", "file": "jira_export_2026-02-25.json", "records": len(tickets), "type": "JSON", "date": "2026-02-25"},
+            {"name": "Coda Services", "file": "Services Übersicht.csv", "records": len(services), "type": "CSV", "date": "2026-01-25"},
+            {"name": "Coda Sales", "file": "Sales Übersicht.csv", "records": len(sales), "type": "CSV", "date": "2026-01-25"},
+            {"name": "Coda Staff", "file": "Staff.csv", "records": len(staff_list), "type": "CSV", "date": "2026-01-25"},
+            {"name": "Coda Units", "file": "Units.csv", "records": len(units_list), "type": "CSV", "date": "2026-01-25"},
+            {"name": "PBI ERP Legacy", "file": "Kosten-Tabelle (DAX)", "records": len(hersteller_map), "type": "DAX", "date": "2026-02-25"},
+            {"name": "PBI eLSA V3", "file": "Deckungsbeitrag Views (DAX)", "records": len(revenue_data), "type": "DAX", "date": "2026-02-25"},
+        ],
+    }
+
     # ── Build output ──
     output = {
         "meta": {
@@ -894,6 +1046,7 @@ def analyze(tickets, services, sales, staff_list, units_list):
         "revenue": revenue_data,
         "hersteller": hersteller_list,
         "herstellerCategories": hersteller_cat_list,
+        "methodology": methodology,
     }
 
     return output

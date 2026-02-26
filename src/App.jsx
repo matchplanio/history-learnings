@@ -9,6 +9,7 @@ import { UnitView } from './views/UnitView'
 import { UnmatchedView } from './views/UnmatchedView'
 import { CustomerView } from './views/CustomerView'
 import { ProjectView } from './views/ProjectView'
+import { MethodikView } from './views/MethodikView'
 
 const navItems = [
   { id: 'services', label: 'Services', icon: '◆' },
@@ -19,6 +20,7 @@ const navItems = [
   { id: 'projects', label: 'Projekte', icon: '◫' },
   { id: 'units', label: 'Units', icon: '⊞' },
   { id: 'unmatched', label: 'Unmatched', icon: '⊘' },
+  { id: 'methodik', label: 'Methodik', icon: '⚙' },
 ]
 
 function App() {
@@ -190,6 +192,7 @@ function App() {
         {currentView === 'projects' && <ProjectView data={data} onServiceClick={openService} />}
         {currentView === 'units' && <UnitView data={data} onServiceClick={openService} />}
         {currentView === 'unmatched' && <UnmatchedView data={data} />}
+        {currentView === 'methodik' && <MethodikView data={data} />}
       </main>
     </div>
   )
