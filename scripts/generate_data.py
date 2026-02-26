@@ -131,14 +131,22 @@ ALIASES = {
                                    # UPS / power supply
                                    r"\bUPS\b", r"\bUSV\b", r"battery.*(?:APC|replace|APCRBC)",
                                    r"Power\s*Supply", r"Netzspannung", r"Stromversorgung",
-                                   # RAID / disk / drive
-                                   r"\bRAID\b.*(?:controller|rebuild|degrad|fail)",
+                                   r"power\s*input.*lost", r"redundancy.*lost",
+                                   # RAID / disk / drive (broader patterns)
+                                   r"\bRAID\b", r"Patrol\s*Read", r"controller\s*slot",
                                    r"(?:Festplatte|disk\s*drive|HDD|SSD).*(?:defekt|fail|replace|tausch)",
-                                   r"Patrol\s*Read", r"controller\s*slot",
+                                   r"Disk \d+ in Backplane", r"drive bay",
+                                   r"Predictive failure", r"Drive \d+ is removed",
                                    # VM / vSphere
                                    r"\bVM\b.*(?:zurücksetzen|aufsetzen|migrate|restart)",
-                                   # Dell Storage / Compellent
+                                   # Dell Storage / Compellent / CMC
                                    r"Compellent", r"Storage\s*Center\s*Alert",
+                                   r"\bCMC-\w+:", r"BARCON\d+SERVER",
+                                   # Filesharing / NAS / network drives
+                                   r"Netzlaufwerk", r"\bNAS\b(?!.*backup)", r"\bSynology\b",
+                                   r"Freigabe.*(?:einrichten|zugriff|fehlt)",
+                                   # Server hostname alerts (FQDN prefixed)
+                                   r"^[A-Za-z0-9\-]+\.(?:intern|local|levigo)\.",
                                    # Generic hardware
                                    r"[Kk]abel.*(?:defekt|tausch|ersetzen)"],
         "Managed Backup & DR": [r"backup", r"veeam", r"\bDR\b", r"disaster.?recovery",
@@ -179,7 +187,9 @@ ALIASES = {
                                 # Location-based alerts (RZ sites)
                                 r"(?:alert|Alert).*(?:NBG|MUC|FRA|NUE)",
                                 # CMC / WWDFV monitoring
-                                r"\bCMC\b.*WWDFV", r"WWDFV"],
+                                r"\bCMC\b.*WWDFV", r"WWDFV",
+                                # RMM tools (Ninja, Datto)
+                                r"\bNinja\b(?!.*Agent)", r"\bDatto\b", r"\bRMM\b"],
         "Managed MS Exchange Server": [r"exchange", r"exchange.?server",
                                         # Outlook / Mail problems → Exchange service
                                         r"\boutlook\b", r"\bpostfach\b", r"e-?mail.*(?:problem|fehler|geht nicht)",
@@ -188,42 +198,74 @@ ALIASES = {
                                         # Broader mail patterns
                                         r"\bmail\b.*(?:server|relay|queue|delivery|bounce)",
                                         r"\bSMTP\b", r"\bIMAP\b", r"\bPOP3?\b",
-                                        r"Mailbox.*(?:full|voll|quota)", r"Postausgang"],
+                                        r"Mailbox.*(?:full|voll|quota)", r"Postausgang",
+                                        # MailStore / mail archiving
+                                        r"\bMailStore\b", r"Mail.*Archiv",
+                                        r"PST.*(?:import|migr|konvert)",
+                                        # Broader mail issues
+                                        r"[Ee]-?[Mm]ail.*(?:geht nicht|kein|Problem|Fehler|Störung)",
+                                        r"Mails?\s+(?:kommen|werden).*nicht"],
         "Managed Microsoft 365": [r"microsoft\s*365", r"\bM365\b", r"office\s*365", r"\bO365\b",
                                    r"\bTeams\b.*(?:problem|fehler|geht nicht)",
-                                   r"\bSharePoint\b", r"\bOneDrive\b"],
+                                   r"\bSharePoint\b", r"\bOneDrive\b",
+                                   # Office apps
+                                   r"\bWord\b.*(?:fehler|problem|absturz|öffnet|hängt)",
+                                   r"\bExcel\b.*(?:fehler|problem|absturz|öffnet|hängt)",
+                                   r"\bOffice\b.*(?:lizenz|aktivier|install|update)"],
         "Managed Cryptshare": [r"cryptshare"],
         "Shared Firewall": [r"shared.*firewall", r"firewall.*shared", r"SFW\b"],
         "Managed Citrix": [r"citrix"],
         "managed Atlassian": [r"atlassian", r"jira.*managed", r"confluence.*managed"],
         "Managed Networking (WLAN)": [r"wlan", r"wifi", r"wireless"],
-        "Managed Networking (LAN)": [r"\bLAN\b", r"Netzwerk", r"Switch\b"],
+        "Managed Networking (LAN)": [r"\bLAN\b", r"Netzwerk", r"Switch\b",
+                                    r"\bVLAN\b", r"\bDHCP\b", r"Patchfeld",
+                                    r"(?:Netzwerk|LAN).*(?:dose|anschluss|port|kabel)",
+                                    r"(?:IP|Adress).*(?:konflikt|änder|zuweisen)"],
         "Managed Baramundi": [r"baramundi"],
         "levigo cloud.drive": [r"cloud\.?drive", r"clouddrive"],
         "Kaspersky aaS": [r"kaspersky"],
         "Managed Windows Server & AD": [r"windows.?server", r"active.?directory", r"\bAD\b.*managed",
                                          r"WSUS",
                                          # Server updates / patching
-                                         r"Updates? für Server", r"Server.*updates?\b"],
+                                         r"Updates? für Server", r"Server.*updates?\b",
+                                         # Windows 11/10 migration
+                                         r"W(?:indows\s*)?1[01]\s*(?:Upgrade|Umstellung|Migration)",
+                                         r"\bGPO\b", r"Gruppenrichtlinie",
+                                         # File shares / Laufwerk
+                                         r"[Ll]aufwerk.*(?:zugriff|verbind|nicht|fehler|map)",
+                                         r"[Ff]reigabe.*(?:zugriff|ordner|server|berechtigung)",
+                                         r"Netzlaufwerk"],
         "levigo managed.archive": [r"managed\.?archive", r"archiv"],
         "Managed MS SQL Server": [r"sql.?server", r"mssql"],
         "Patchmanagement (Windows)": [r"patch.*windows", r"windows.*patch",
                                        r"Windows.*Update", r"Update.*Windows",
                                        r"WSUS.*(?:update|sync|fehler)", r"Patchday",
-                                       r"(?:Sicherheits|Security).*[Uu]pdate"],
+                                       r"(?:Sicherheits|Security).*[Uu]pdate",
+                                       # Broader update/maintenance patterns
+                                       r"[Uu]pdate.*(?:install|einspielen|durchf|server|client)",
+                                       r"(?:Firmware|BIOS|Treiber).*[Uu]pdate",
+                                       r"Wartungsfenster", r"Reboot.*(?:nach|wegen).*[Uu]pdate",
+                                       r"(?:Neustart|Restart).*(?:Update|Patch)",
+                                       # Customer software updates
+                                       r"[Ww]indata.*[Uu]pdate"],
         "Patchmanagement (Linux)": [r"patch.*linux", r"linux.*patch"],
         "levigo AntiSpam": [r"antispam", r"anti.?spam", r"spam.*filter", r"SPOOF"],
         "Managed Endpointsecurity": [r"endpoint.*security", r"endpoint.*protection",
                                       r"Sophos.*Firewall", r"\*ALERT\*.*Sophos",
                                       r"Ninja.*Agent", r"Ninja Monitoring",
                                       r"\bVirus\b", r"\bMalware\b", r"Trojaner",
+                                      r"\bBitdefender\b",
                                       # Clientsecurity events
                                       r"clientsecurity.*event", r"ClientSecurity"],
         "Managed Linux Server": [r"linux.?server"],
-        "Managed Bizzdesign Horizzon": [r"bizzdesign", r"horizzon"],
+        "Managed Bizzdesign Horizzon": [r"bizzdesign", r"horizzon",
+                                        r"[Hh]orizon\s*[Ii]mage"],
         "Managed MDM": [r"\bMDM\b", r"mobile.?device"],
         "levigo Webhosting": [r"webhosting", r"web.?hosting",
-                               r"\bNextcloud\b", r"\bhomepage\b", r"\bwebseite\b", r"\bwebsite\b"],
+                               r"\bNextcloud\b", r"\bhomepage\b", r"\bwebseite\b", r"\bwebsite\b",
+                               r"\bWordPress\b", r"\bApache\b", r"\bNginx\b",
+                               r"\bPHP\b.*(?:version|update|fehler)",
+                               r"[Ww]eb.*(?:server|seite|site).*(?:fehler|down|nicht erreichbar)"],
         "levigo/matrix Mail Server": [r"mail.?server", r"mailserver", r"matrix.*mail"],
         "managed.wireguard": [r"wireguard"],
         "Housing": [r"\bhousing\b", r"colocation", r"coloc",
@@ -233,10 +275,11 @@ ALIASES = {
         "Service Desk": [r"service.?desk", r"Anfahrt\b", r"Callback\b", r"Regelwartung",
                           # Onboarding / hardware provisioning
                           r"(?:neuer?|neue[sn]?) (?:Mitarbeiter|Notebook|Rechner|Laptop|User|Gerät|PC)",
-                          r"Onboarding",
-                          # Printer
+                          r"Onboarding", r"Offboarding",
+                          # Printer / Scanner
                           r"[Dd]rucker", r"[Pp]rinter", r"[Dd]rucken",
-                          r"Papierstau", r"Toner",
+                          r"Papierstau", r"Toner", r"\bScanner\b",
+                          r"Druckserver",
                           # Generic support / desk requests
                           r"Passwort.*(?:reset|zurück|änder|vergessen)",
                           r"Zugang.*(?:gesperrt|einrichten|freischalt)",
@@ -244,9 +287,17 @@ ALIASES = {
                           r"Umzug.*(?:Arbeitsplatz|Büro|Raum)",
                           r"\bHeadset\b", r"\bMonitor\b.*(?:defekt|tausch|neu)",
                           r"\bDocking\b", r"\bBeamer\b",
+                          # User management (broader)
+                          r"(?:User|Benutzer|Mitarbeiter).*(?:anlegen|erstellen|einrichten|deaktiv)",
+                          r"(?:Anlegen|Einrichten).*(?:User|Benutzer|Konto|Account)",
+                          r"Windows Zugang", r"Zugriffs(?:recht|paket)",
                           # Access / permission requests
                           r"[Zz]ugriff.*(?:einrichten|fehlt|kein|beantrag|freischalt)",
                           r"[Ww]artung\b", r"[Ii]nstallation\b",
+                          # Software installation
+                          r"(?:Software|Programm).*(?:install|einricht|bereitstell)",
+                          r"\bLexware\b", r"\bAdobe\b", r"\bBartender\b",
+                          r"\bEPLAN\b", r"\bOffice\b.*(?:install|lizenz|migration)",
                           # Generic IT support
                           r"(?:funktioniert|geht).*nicht",
                           r"nicht.*(?:erreichbar|verfügbar)",
@@ -254,10 +305,24 @@ ALIASES = {
                           # Telefonie / 3CX / Voicemail
                           r"\bVoicemail\b", r"\b3CX\b", r"Telefonanlage",
                           r"Telefonabrechnung", r"\bDurchwahl\b", r"\bNebenstelle\b",
+                          r"\bSIP\b.*(?:trunk|konto|registr)", r"Rufnummer",
+                          # Hardware / Asset management
+                          r"Rechner.*(?:einrichten|aufsetzen|umstellen|tausch)",
+                          r"(?:Notebook|Laptop).*(?:einrichten|aufsetzen|bestell|tausch)",
+                          r"\bAsset\b.*(?:herausgegeben|eingerichtet|bestellt)",
+                          # License management
+                          r"Lizenz.*(?:problem|fehler|grenze|kündigung|erreich)",
                           # Fahrzeit / field service
                           r"Fahrzeit", r"\bSpringer\b",
                           # Customer-specific generic requests (Packautomaten etc.)
-                          r"[Pp]ackautomaten"],
+                          r"[Pp]ackautomaten",
+                          # Hotline / support calls
+                          r"[Ss]upport.*[Hh]otline", r"voip\.levigo",
+                          r"[Rr]ückruf\b", r"bittet.*(?:um|RR|Rückruf)",
+                          # Scan / Scanner
+                          r"[Ss]canner?\b.*(?:geht nicht|fehler|problem|einricht)",
+                          # Generic Anliegen
+                          r"\bAnliegen\b"],
         "TaRZ": [r"\bTaRZ\b"],
         "S3 aaS": [r"\bS3\b.*aaS", r"object.?storage", r"\bS3\b.*(?:bucket|storage)"],
         "Kubernetes aaS on VDC (Addon zu CCP)": [r"kubernetes", r"\bk8s\b"],
@@ -269,11 +334,18 @@ ALIASES = {
         "Managed Mattermost": [r"mattermost"],
         "Managed Firewall": [r"managed.*firewall", r"\bFirewall\b",
                               r"\bFortiGate\b", r"\bFortiOS\b", r"\bUTM\b",
-                              r"VPN.*(?:tunnel|verbind|connect|down|problem)"],
+                              r"VPN.*(?:tunnel|verbind|connect|down|problem)",
+                              # Broader remote access / firewall
+                              r"(?:Remote|Fern).*(?:zugriff|zugang|wartung|desktop)",
+                              r"(?:Port|Regel).*(?:freischalt|öffnen|firewall)",
+                              r"Firewall.*(?:regel|rule|policy|port|freischalt)",
+                              r"\bIPsec\b", r"\bSSL.?VPN\b"],
         "Secure Remote Browsing": [r"remote.?browsing"],
         "Checkmk operating": [r"checkmk", r"check_mk"],
         "levigo CCP": [r"\bCCP\b", r"cloud.?computing.?platform",
-                        r"\bazure\b", r"\bAWS\b", r"\bcloud\b"],
+                        r"\bazure\b", r"\bAWS\b", r"\bcloud\b",
+                        r"\bAzure\b.*(?:AD|Entra|Intune|MFA)",
+                        r"\bIntune\b", r"\bEntra\b", r"\bMFA\b"],
         "levigo vDC": [r"\bvDC\b", r"virtual.?data.?center"],
         "managed.backup (VCC)": [r"backup.*VCC", r"VCC.*backup"],
         "managed.backup für M365": [r"backup.*M365", r"M365.*backup", r"backup.*microsoft.*365"],
@@ -286,7 +358,11 @@ ALIASES = {
                                   r"\bSSL\b", r"\bTLS\b", r"[Zz]ertifikat",
                                   r"Let.?s.?Encrypt", r"\bcert\b",
                                   # ISP / carrier
-                                  r"\b[Ee]unetworks\b", r"[Ww]artungsarbeiten.*(?:eunetworks|carrier)"],
+                                  r"\b[Ee]unetworks\b", r"[Ww]artungsarbeiten.*(?:eunetworks|carrier)",
+                                  # Broader internet/DNS
+                                  r"DNS.*(?:problem|fehler|nicht auflös)",
+                                  r"Internet.*(?:langsam|down|ausfall|störung|geht nicht)",
+                                  r"Leitung.*(?:störung|ausfall|down)"],
 }
 
 def build_matchers(services):
@@ -321,6 +397,13 @@ def decode_mime_subject(s):
     except Exception:
         return s
 
+_CUSTOMER_PREFIX_RE = re.compile(r'^[A-Za-zÄÖÜäöüß][A-Za-z0-9äöüÄÖÜß\-_\.]+?:\s')
+_SYSTEM_SUMMARY_PREFIXES = {"levigo-Mon", "Check_MK", "AUTO-GRAYLOG",
+                             "baresel", "acps", "bebion", "tcon", "qulog", "hald",
+                             "pmon", "smon", "Fwd", "Re", "AW", "WG",
+                             "IBM", "systems"}
+_ESX_PREFIX_RE = re.compile(r'^[a-z]-esx-\d+')
+
 def match_ticket(ticket, matchers):
     """Match a ticket to a service by summary + description."""
     summary = ticket.get("summary", "")
@@ -332,6 +415,16 @@ def match_ticket(ticket, matchers):
     for name, pattern in matchers:
         if pattern.search(text):
             return name
+
+    # Fallback: customer-prefixed tickets ("Customer: problem") → Service Desk
+    m = _CUSTOMER_PREFIX_RE.match(summary)
+    if m:
+        prefix = m.group(0).rstrip(': ')
+        if (prefix not in _SYSTEM_SUMMARY_PREFIXES
+            and not _ESX_PREFIX_RE.match(prefix)
+            and len(prefix) <= 25):
+            return "Service Desk"
+
     return None
 
 # ── Customer Extraction ──
@@ -1166,6 +1259,83 @@ def main():
     print(f"  Projects: {output['projects']['totalProjects']} ({output['projects']['totalSubTasks']} sub-tasks)")
     print(f"  Revenue groups: {len(output['revenue'])}")
     print(f"  Unmatched top words: {', '.join(w['word'] for w in output['unmatched']['topWords'][:10])}")
+
+    # ── Generate ERP 2025 profiles ──
+    generate_profiles(tickets, services, out_path.parent)
+
+
+def generate_profiles(tickets, services, public_dir):
+    """Generate profiles2025.json with customer and project profiles for 2025."""
+    matchers = build_matchers(services)
+
+    # Filter 2025 tickets
+    tickets_2025 = [t for t in tickets if t.get("created", "").startswith("2025")]
+    if not tickets_2025:
+        print("  No 2025 tickets found, skipping profiles")
+        return
+
+    # Customer profiles
+    customer_tickets = defaultdict(list)
+    for t in tickets_2025:
+        cust = extract_customer(t)
+        if cust:
+            customer_tickets[cust].append(t)
+
+    customer_profiles = []
+    for cust, tix in sorted(customer_tickets.items(), key=lambda x: -len(x[1])):
+        if len(tix) < 5:
+            continue
+        services_matched = Counter()
+        for t in tix:
+            svc = match_ticket(t, matchers)
+            if svc:
+                services_matched[svc] += 1
+        matched_count = sum(services_matched.values())
+        monthly = Counter(t.get("created", "")[:7] for t in tix if t.get("created"))
+        customer_profiles.append({
+            "name": cust,
+            "tickets": len(tix),
+            "matchedTickets": matched_count,
+            "matchRate": round(matched_count / len(tix) * 100, 1),
+            "services": [{"name": n, "count": c} for n, c in services_matched.most_common(10)],
+            "servicesCount": len(services_matched),
+            "monthlyTickets": dict(sorted(monthly.items())),
+        })
+
+    # Project profiles (SXPP 2025)
+    sxpp_2025 = [t for t in tickets_2025 if t.get("project") == "SXPP" and t.get("type") == "Projekt"]
+    project_profiles = []
+    for p in sxpp_2025:
+        cust = extract_customer(p)
+        project_profiles.append({
+            "key": p["key"],
+            "summary": p.get("summary", ""),
+            "customer": cust,
+            "status": p.get("status", ""),
+            "created": (p.get("created") or "")[:10],
+        })
+
+    profiles = {
+        "customerProfiles": customer_profiles,
+        "projectProfiles": project_profiles,
+        "meta": {
+            "year": 2025,
+            "totalTickets": len(tickets_2025),
+            "totalCustomers": len(customer_profiles),
+            "totalProjects": len(project_profiles),
+            "overallMatchRate": round(sum(c["matchedTickets"] for c in customer_profiles) /
+                                      sum(c["tickets"] for c in customer_profiles) * 100, 1)
+                                if customer_profiles else 0,
+        },
+    }
+
+    profiles_path = public_dir / "profiles2025.json"
+    with open(profiles_path, "w") as f:
+        json.dump(profiles, f, ensure_ascii=False, indent=None, separators=(",", ":"))
+    print(f"\nProfiles: {profiles_path}")
+    print(f"  Customers: {len(customer_profiles)}, Projects: {len(project_profiles)}")
+    print(f"  Overall match rate: {profiles['meta']['overallMatchRate']}%")
+
 
 if __name__ == "__main__":
     main()
