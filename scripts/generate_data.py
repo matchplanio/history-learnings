@@ -8,6 +8,7 @@ Sources:
   - Coda Sales: _Rohdaten/Coda/2026-01-25/Sales Übersicht.csv (market domains)
   - Coda Staff: _Rohdaten/Coda/2026-01-25/Staff.csv (59 people)
   - Coda Units: _Rohdaten/Coda/2026-01-25/Units.csv (10 units)
+  - Coda Kernfunktionen: _Rohdaten/Coda/2026-01-25/Kernfunktionen.csv (10 functions)
 
 Output: public/data.json
 """
@@ -115,6 +116,156 @@ def load_units():
                 "beschreibung": row.get("Beschreibung / Typische Aufgaben", "").strip(),
             })
     return units
+
+def load_kernfunktionen():
+    """Load Kernfunktionen from Coda CSV → maps each core function to its delivery unit."""
+    kf_list = []
+    with open(CODA / "Kernfunktionen.csv") as f:
+        for row in csv.DictReader(f):
+            if row.get("Status", "").strip() != "Public":
+                continue
+            kf_list.append({
+                "funktion": row.get("Funktion", "").strip(),
+                "ziel": row.get("Ziel", "").strip(),
+                "unit": row.get("Delivery Unit", "").strip(),
+                "rollen": row.get("Beteiligte Rollen", "").strip(),
+                "schnittstellen": row.get("Schnittstellen", "").strip(),
+            })
+    return kf_list
+
+def build_unit_keyword_map(units_list, kf_list):
+    """Build keyword patterns per unit from Kernfunktionen + unit descriptions.
+
+    Returns dict: unit_name → list of (keyword_regex, weight) tuples.
+    Keywords come from:
+      - Unit Beschreibung / Typische Aufgaben
+      - Kernfunktionen Ziele (goals)
+      - Kernfunktionen Funktionsname
+    """
+    unit_keywords = {}
+
+    # Keyword patterns derived from Kernfunktionen goals and unit descriptions.
+    # Weight 3 = highly specific, 2 = moderately specific, 1 = weak signal.
+    # Patterns are designed to match ticket summaries, not general text.
+    unit_keywords["Engineering & Consulting"] = [
+        (re.compile(r'\b(?:consulting|beratung|berater)\b', re.I), 3),
+        (re.compile(r'\barchitect(?:ur)?\b', re.I), 3),
+        (re.compile(r'\b(?:migration|migrieren|migriert)\b', re.I), 3),
+        (re.compile(r'\b(?:implementierung|implementieren|implementiert)\b', re.I), 3),
+        (re.compile(r'\b(?:konzept|konzeption|spezifikation)\b', re.I), 2),
+        (re.compile(r'\b(?:transition|rollout)\b', re.I), 2),
+        (re.compile(r'\b(?:workshop|assessment|audit)\b', re.I), 2),
+        (re.compile(r'\b(?:vCIO|ISMS|ISO\s*27001|BSI)\b', re.I), 3),
+        (re.compile(r'\b(?:informationssicherheit|sicherheitskonzept)\b', re.I), 2),
+        (re.compile(r'\b(?:pre.?sales?|lösungsentwicklung)\b', re.I), 2),
+    ]
+
+    unit_keywords["Managed Services"] = [
+        (re.compile(r'\bmanaged\b', re.I), 3),
+        (re.compile(r'\b(?:betrieb|operating)\b', re.I), 2),
+        (re.compile(r'\b(?:monitoring|überwachung)\b', re.I), 3),
+        (re.compile(r'\b(?:2nd.?level|second.?level)\b', re.I), 3),
+        (re.compile(r'\b(?:wartung|maintenance)\b', re.I), 2),
+        (re.compile(r'\b(?:backup|restore|disaster.?recovery)\b', re.I), 3),
+        (re.compile(r'\b(?:alerting|checkmk|nagios|zabbix|NinjaOne)\b', re.I), 3),
+        (re.compile(r'\b(?:Hudu|Fernwartung)\b', re.I), 3),
+        (re.compile(r'\b(?:firewall|endpoint|antivirus|virenschutz)\b', re.I), 2),
+        (re.compile(r'\bserver\b', re.I), 1),
+        (re.compile(r'\b(?:infrastruktur|netzwerk)\b', re.I), 1),
+        (re.compile(r'\b(?:severity|alert)\b', re.I), 2),
+        (re.compile(r'\b(?:incident|störung)\b', re.I), 1),
+        (re.compile(r'\b(?:cryptshare|verschlüsselung|patchmanagement)\b', re.I), 3),
+    ]
+
+    unit_keywords["Cloud Platform Services"] = [
+        (re.compile(r'\b(?:cloud|openstack|vmware|vdc|paas|iaas)\b', re.I), 3),
+        (re.compile(r'\b(?:plattform|platform|cluster|virtualisierung)\b', re.I), 3),
+        (re.compile(r'\b(?:kubernetes|k8s|openshift|container|docker)\b', re.I), 3),
+        (re.compile(r'\b(?:dbaas|datenbank.?service)\b', re.I), 3),
+        (re.compile(r'\b(?:housing|rack|rechenzentrum|datacenter|colocation)\b', re.I), 3),
+        (re.compile(r'\b(?:storage|san|nas|nfs|ceph)\b', re.I), 2),
+        (re.compile(r'\b(?:shared|multi.?tenant|mandant)\b', re.I), 2),
+        (re.compile(r'\b(?:wireguard)\b', re.I), 2),
+        (re.compile(r'\b(?:esx|vcenter|esxi|vSphere)\b', re.I), 3),
+        # Internet/DNS/Domain/Hosting services are platform-level
+        (re.compile(r'\b(?:webhosting|hosting)\b', re.I), 3),
+        (re.compile(r'\b(?:DNS|domain)\b', re.I), 2),
+        (re.compile(r'\b(?:VPN|internet.?service|SSL|TLS|zertifikat)\b', re.I), 2),
+        (re.compile(r'\b(?:antispam|spam|mail.?server|mailserver)\b', re.I), 2),
+    ]
+
+    unit_keywords["Customer Service"] = [
+        (re.compile(r'\b(?:service.?desk|1st.?level|first.?level|helpdesk)\b', re.I), 3),
+        (re.compile(r'\b(?:kundenbetreuung|kundensupport|customer.?success)\b', re.I), 3),
+        (re.compile(r'\b(?:SPoC|single.?point)\b', re.I), 3),
+        (re.compile(r'\b(?:workforce|einsatzplanung|kommissionierung)\b', re.I), 2),
+        (re.compile(r'\b(?:anfrage|serviceanfrage)\b', re.I), 1),
+    ]
+
+    unit_keywords["Sales & Marketing"] = [
+        (re.compile(r'\b(?:vertrieb|neukundengewinnung|akquise)\b', re.I), 3),
+        (re.compile(r'\b(?:marketing|kampagne|social.?selling|linkedin)\b', re.I), 3),
+        (re.compile(r'\b(?:angebot|proposal|kalkulation)\b', re.I), 2),
+        (re.compile(r'\b(?:messe|event)\b', re.I), 2),
+        (re.compile(r'\b(?:cross.?sell|up.?sell)\b', re.I), 3),
+        (re.compile(r'\b(?:einkauf|beschaffung)\b', re.I), 2),
+    ]
+
+    unit_keywords["Internal Functions"] = [
+        (re.compile(r'\b(?:interne.?IT)\b', re.I), 3),
+        (re.compile(r'\b(?:recruiting|personal(?:abteilung)?)\b', re.I), 3),
+        (re.compile(r'\b(?:buchhaltung|finanz|verwaltung)\b', re.I), 3),
+        (re.compile(r'\b(?:datenschutz|DSB|DSGVO|compliance)\b', re.I), 3),
+        (re.compile(r'\b(?:ausbildung|azubi|auszubildende)\b', re.I), 3),
+    ]
+
+    unit_keywords["Geschäftsführung"] = [
+        (re.compile(r'\b(?:geschäftsführ|strategie)\b', re.I), 3),
+        (re.compile(r'\b(?:business.?development)\b', re.I), 2),
+        (re.compile(r'\b(?:stabstelle|governance)\b', re.I), 2),
+    ]
+
+    return unit_keywords
+
+
+def assign_service_to_unit_by_kernfunktion(service_name, service_tickets, unit_kw_map):
+    """Score a service against all units using Kernfunktionen keywords.
+
+    Analyzes ticket summaries to find the best-matching unit.
+    Returns (best_unit, score, scores_dict) or (None, 0, {}).
+    """
+    if not service_tickets:
+        return None, 0, {}
+
+    # Sample up to 300 ticket summaries for keyword matching
+    sample = service_tickets[:300]
+    text_blob = " ".join(t.get("summary", "") for t in sample)
+    # Service name contributes heavily (repeated for weight)
+    text_blob += (" " + service_name) * 5
+
+    n_tickets = len(sample)
+    scores = {}
+    for unit_name, patterns in unit_kw_map.items():
+        score = 0
+        for pattern, weight in patterns:
+            hits = len(pattern.findall(text_blob))
+            score += hits * weight
+        if score > 0:
+            # Normalize by sample size to get density score
+            scores[unit_name] = round(score / n_tickets * 100, 1)
+
+    if not scores:
+        return None, 0, {}
+
+    best = max(scores, key=scores.get)
+    # Only assign if score is meaningfully above second-best (10% margin)
+    sorted_scores = sorted(scores.values(), reverse=True)
+    if len(sorted_scores) > 1 and sorted_scores[0] < sorted_scores[1] * 1.10:
+        # Ambiguous - scores too close, skip assignment
+        return None, 0, scores
+
+    return best, scores[best], scores
+
 
 # ── Matching ──
 
@@ -609,8 +760,9 @@ def extract_customer(ticket):
 
 # ── Analysis ──
 
-def analyze(tickets, services, sales, staff_list, units_list):
+def analyze(tickets, services, sales, staff_list, units_list, kf_list):
     matchers = build_matchers(services)
+    unit_kw_map = build_unit_keyword_map(units_list, kf_list)
 
     # Match tickets
     matched = defaultdict(list)
@@ -814,7 +966,8 @@ def analyze(tickets, services, sales, staff_list, units_list):
             "serviceNames": data["serviceNames"],
         })
 
-    # ── Unit analysis ──
+    # ── Unit analysis (Kernfunktionen-basiert) ──
+    # 1) Service-based unit stats (catalog mapping)
     unit_stats = defaultdict(lambda: {"services": 0, "tickets": 0, "people": set(), "serviceNames": []})
     for s in service_list:
         u = s["unit"] or "Ohne Unit"
@@ -824,18 +977,108 @@ def analyze(tickets, services, sales, staff_list, units_list):
         for a in s["topAssignees"]:
             unit_stats[u]["people"].add(a["name"])
 
+    # 2) Kernfunktionen-based perspective: combine catalog + keyword + project scoring
+    #    - Jira project mapping takes priority (SXPP → EnCo, IEO → CP)
+    #    - Services WITH catalog unit → use catalog unit (authoritative)
+    #    - Services WITHOUT catalog unit → use KF keyword scoring
+    #    NO DOUBLE COUNTING: each ticket belongs to exactly one unit
+    kf_unit_tickets = defaultdict(lambda: {"tickets": 0, "services": Counter(), "serviceDetails": []})
+
+    # 2a) Project-based unit mapping
+    PROJECT_UNIT_MAP = {
+        "SXPP": "Engineering & Consulting",
+        "IEO": "Cloud Platform Services",
+    }
+    # Build set of ticket keys that are project-mapped (to avoid double counting)
+    project_ticket_keys = set()
+    project_unit_tickets = defaultdict(lambda: {"tickets": 0, "byType": Counter(), "assignees": Counter()})
+    for t in tickets:
+        proj = t.get("project", "")
+        if proj in PROJECT_UNIT_MAP:
+            project_ticket_keys.add(t.get("key", ""))
+            pu = PROJECT_UNIT_MAP[proj]
+            project_unit_tickets[pu]["tickets"] += 1
+            project_unit_tickets[pu]["byType"][t.get("type", "?")] += 1
+            a = t.get("assignee")
+            if a:
+                project_unit_tickets[pu]["assignees"][a] += 1
+
+    # 2b) Service-based KF scoring (excluding project-mapped tickets)
+    for svc_name, tix in matched.items():
+        svc_meta = services.get(svc_name, {})
+        catalog_unit = svc_meta.get("unit", "")
+
+        # Filter out project-mapped tickets to avoid double counting
+        non_project_tix = [t for t in tix if t.get("key", "") not in project_ticket_keys]
+
+        # Always compute KF scores for transparency (use all tickets for scoring)
+        best_unit, score, all_scores = assign_service_to_unit_by_kernfunktion(
+            svc_name, tix, unit_kw_map
+        )
+
+        # Catalog unit is authoritative if present
+        if catalog_unit:
+            effective_unit = catalog_unit
+            score = all_scores.get(catalog_unit, 0)
+        else:
+            effective_unit = best_unit
+
+        # Count only non-project tickets for this unit
+        ticket_count = len(non_project_tix)
+        if effective_unit and ticket_count > 0:
+            kf_unit_tickets[effective_unit]["tickets"] += ticket_count
+            kf_unit_tickets[effective_unit]["services"][svc_name] += ticket_count
+            kf_unit_tickets[effective_unit]["serviceDetails"].append({
+                "name": svc_name,
+                "tickets": ticket_count,
+                "catalogUnit": catalog_unit,
+                "kfUnit": best_unit or "",
+                "score": score,
+                "allScores": {k: v for k, v in sorted(all_scores.items(), key=lambda x: -x[1])[:3]},
+            })
+
+    # 3) Build Kernfunktionen list per unit
+    unit_kernfunktionen = defaultdict(list)
+    for kf in kf_list:
+        if kf["unit"]:
+            unit_kernfunktionen[kf["unit"]].append(kf["funktion"])
+
     unit_list_out = []
-    for u_name, data in sorted(unit_stats.items(), key=lambda x: -x[1]["tickets"]):
-        # Find unit meta from Coda
+    # Include all units from Coda (not just those with catalog services)
+    all_unit_names = set(u["name"] for u in units_list if u.get("status") == "Public")
+    all_unit_names.update(unit_stats.keys())
+    for u_name in sorted(all_unit_names, key=lambda n: -(unit_stats.get(n, {}).get("tickets", 0) or kf_unit_tickets.get(n, {}).get("tickets", 0))):
         unit_meta = next((u for u in units_list if u["name"] == u_name), {})
+        cat_data = unit_stats.get(u_name, {"services": 0, "tickets": 0, "people": set(), "serviceNames": []})
+        kf_data = kf_unit_tickets.get(u_name, {"tickets": 0, "services": Counter(), "serviceDetails": []})
+        proj_data = project_unit_tickets.get(u_name, {"tickets": 0, "byType": Counter(), "assignees": Counter()})
+
+        # Top services by Kernfunktionen scoring
+        kf_svc_details = sorted(kf_data.get("serviceDetails", []), key=lambda x: -x["tickets"])
+
+        # Combined KF tickets = service-based KF + project-based
+        combined_kf = kf_data["tickets"] + proj_data["tickets"]
+
         unit_list_out.append({
             "name": u_name,
             "kuerzel": unit_meta.get("kuerzel", ""),
             "fte": unit_meta.get("fte", ""),
-            "services": data["services"],
-            "tickets": data["tickets"],
-            "people": len(data["people"]),
-            "serviceNames": data["serviceNames"],
+            "beschreibung": unit_meta.get("beschreibung", ""),
+            "kategorie": unit_meta.get("kategorie", ""),
+            "kernfunktionen": unit_kernfunktionen.get(u_name, []),
+            # Catalog perspective (service → unit from Coda)
+            "services": cat_data["services"],
+            "tickets": cat_data["tickets"],
+            "people": len(cat_data["people"]) if isinstance(cat_data["people"], set) else cat_data.get("people", 0),
+            "serviceNames": cat_data["serviceNames"],
+            # Kernfunktionen perspective (service keyword + project mapping)
+            "kfTickets": combined_kf,
+            "kfServices": len(kf_data["services"]),
+            "kfTopServices": [{"name": d["name"], "tickets": d["tickets"], "catalogUnit": d["catalogUnit"], "score": d["score"]} for d in kf_svc_details[:15]],
+            # Project-based attribution (e.g. SXPP → EnCo)
+            "projectTickets": proj_data["tickets"],
+            "projectByType": dict(proj_data["byType"].most_common()),
+            "projectTopAssignees": [{"name": n, "count": c} for n, c in proj_data["assignees"].most_common(10)],
         })
 
     # ── Customer analysis ──
@@ -1602,8 +1845,11 @@ def main():
     units_list = load_units()
     print(f"  Units: {len(units_list)} units")
 
+    kf_list = load_kernfunktionen()
+    print(f"  Kernfunktionen: {len(kf_list)} functions")
+
     print("\nAnalyzing...")
-    output = analyze(tickets, services, sales, staff_list, units_list)
+    output = analyze(tickets, services, sales, staff_list, units_list, kf_list)
 
     out_path = APP / "public" / "data.json"
     with open(out_path, "w") as f:
