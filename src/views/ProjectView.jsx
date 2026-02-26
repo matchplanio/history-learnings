@@ -1,4 +1,4 @@
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts'
 import { useMemo, useState } from 'react'
 import { theme } from '../config/theme'
 
@@ -20,6 +20,20 @@ const statusColors = {
   'Deferred': '#6b7280',
 }
 
+const categoryColors = {
+  'MS365 / Cloud': '#60a5fa',
+  'Firewall / Security': '#f87171',
+  'Infrastruktur': '#22d3ee',
+  'Linux-Consulting': '#c084fc',
+  'Migration / vDC': '#fbbf24',
+  'Backup / Storage': '#34d399',
+  'Netzwerk / WLAN': '#2dd4bf',
+  'Managed Services': '#fb923c',
+  'Hosting / RZ': '#f472b6',
+  'Citrix / VDI': '#a78bfa',
+  'Sonstiges': '#8b949e',
+}
+
 export function ProjectView({ data, onServiceClick }) {
   const proj = useMemo(() => data.projects || {}, [data])
   const projects = useMemo(() => proj.projects || [], [proj])
@@ -27,6 +41,7 @@ export function ProjectView({ data, onServiceClick }) {
   const hersteller = useMemo(() => data.hersteller || [], [data])
   const herstellerCats = useMemo(() => data.herstellerCategories || [], [data])
   const [filterStatus, setFilterStatus] = useState('all')
+  const [filterCategory, setFilterCategory] = useState('all')
   const [selectedProject, setSelectedProject] = useState(null)
   const [activeTab, setActiveTab] = useState('projects')
   const [herstellerFilter, setHerstellerFilter] = useState('all')
@@ -34,8 +49,9 @@ export function ProjectView({ data, onServiceClick }) {
   const filtered = useMemo(() => {
     let list = projects
     if (filterStatus !== 'all') list = list.filter(p => p.status === filterStatus)
+    if (filterCategory !== 'all') list = list.filter(p => p.category === filterCategory)
     return list
-  }, [projects, filterStatus])
+  }, [projects, filterStatus, filterCategory])
 
   // Charts
   const yearlyData = useMemo(() =>
@@ -49,6 +65,19 @@ export function ProjectView({ data, onServiceClick }) {
   const assigneeData = useMemo(() => (proj.byAssignee || []).slice(0, 10), [proj])
 
   const customerData = useMemo(() => (proj.customers || []).slice(0, 15), [proj])
+
+  const categoryData = useMemo(() =>
+    Object.entries(proj.byCategory || {}).map(([name, value]) => ({ name, value })),
+  [proj])
+
+  const categoryByYearData = useMemo(() => {
+    const catYear = proj.categoryByYear || {}
+    const allCats = Object.keys(proj.byCategory || {})
+    return Object.entries(catYear).map(([year, cats]) => ({
+      year,
+      ...Object.fromEntries(allCats.map(c => [c, cats[c] || 0]))
+    }))
+  }, [proj])
 
   // Revenue grouped
   const revenueByAG = useMemo(() => {
@@ -92,9 +121,10 @@ export function ProjectView({ data, onServiceClick }) {
       {activeTab === 'projects' && (
         <>
           {/* KPI cards */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 16 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 12, marginBottom: 16 }}>
             {[
               { label: 'Projekte', value: proj.totalProjects, color: theme.accent },
+              { label: 'Kategorien', value: categoryData.length, color: '#c084fc' },
               { label: 'Sub-Tasks', value: proj.totalSubTasks?.toLocaleString(), color: '#34d399' },
               { label: 'Kunden', value: (proj.customers || []).length, color: '#fbbf24' },
               { label: 'Anfahrten', value: proj.totalAnfahrten, color: '#f87171' },
@@ -106,22 +136,51 @@ export function ProjectView({ data, onServiceClick }) {
             ))}
           </div>
 
-          {/* Charts row */}
+          {/* Category overview row */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
-            {/* Yearly */}
+            {/* Category pie */}
             <div style={sectionStyle}>
-              <h3 style={{ fontSize: 14, fontWeight: 600, color: theme.text.primary, marginBottom: 16 }}>Projekte pro Jahr</h3>
-              <ResponsiveContainer width="100%" height={250}>
-                <BarChart data={yearlyData}>
+              <h3 style={{ fontSize: 14, fontWeight: 600, color: theme.text.primary, marginBottom: 16 }}>Projektkategorien</h3>
+              <ResponsiveContainer width="100%" height={280}>
+                <PieChart>
+                  <Pie data={categoryData} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={50} outerRadius={100} paddingAngle={2}>
+                    {categoryData.map((c, i) => <Cell key={i} fill={categoryColors[c.name] || colors[i % colors.length]} cursor="pointer" />)}
+                  </Pie>
+                  <Tooltip contentStyle={tooltipStyle} />
+                </PieChart>
+              </ResponsiveContainer>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, justifyContent: 'center', marginTop: 4 }}>
+                {categoryData.map((c) => (
+                  <span key={c.name} onClick={() => setFilterCategory(filterCategory === c.name ? 'all' : c.name)}
+                    style={{ fontSize: 11, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4,
+                      color: filterCategory === c.name ? theme.accent : theme.text.muted,
+                      fontWeight: filterCategory === c.name ? 600 : 400 }}>
+                    <span style={{ width: 8, height: 8, borderRadius: 2, backgroundColor: categoryColors[c.name] || '#8b949e' }} />
+                    {c.name} ({c.value})
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            {/* Category × Year stacked bar */}
+            <div style={sectionStyle}>
+              <h3 style={{ fontSize: 14, fontWeight: 600, color: theme.text.primary, marginBottom: 16 }}>Kategorien pro Jahr</h3>
+              <ResponsiveContainer width="100%" height={280}>
+                <BarChart data={categoryByYearData}>
                   <CartesianGrid strokeDasharray="3 3" stroke={theme.border.subtle} />
                   <XAxis dataKey="year" stroke={theme.text.muted} fontSize={11} />
                   <YAxis stroke={theme.text.muted} fontSize={11} />
                   <Tooltip contentStyle={tooltipStyle} />
-                  <Bar dataKey="count" fill={theme.accent} radius={[4, 4, 0, 0]} />
+                  {categoryData.map((c) => (
+                    <Bar key={c.name} dataKey={c.name} stackId="a" fill={categoryColors[c.name] || '#8b949e'} />
+                  ))}
                 </BarChart>
               </ResponsiveContainer>
             </div>
+          </div>
 
+          {/* Status + Yearly row */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
             {/* Status pie */}
             <div style={sectionStyle}>
               <h3 style={{ fontSize: 14, fontWeight: 600, color: theme.text.primary, marginBottom: 16 }}>Status-Verteilung</h3>
@@ -141,6 +200,20 @@ export function ProjectView({ data, onServiceClick }) {
                   </span>
                 ))}
               </div>
+            </div>
+
+            {/* Yearly */}
+            <div style={sectionStyle}>
+              <h3 style={{ fontSize: 14, fontWeight: 600, color: theme.text.primary, marginBottom: 16 }}>Projekte pro Jahr</h3>
+              <ResponsiveContainer width="100%" height={250}>
+                <BarChart data={yearlyData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke={theme.border.subtle} />
+                  <XAxis dataKey="year" stroke={theme.text.muted} fontSize={11} />
+                  <YAxis stroke={theme.text.muted} fontSize={11} />
+                  <Tooltip contentStyle={tooltipStyle} />
+                  <Bar dataKey="count" fill={theme.accent} radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
             </div>
           </div>
 
@@ -179,19 +252,40 @@ export function ProjectView({ data, onServiceClick }) {
             </div>
           </div>
 
-          {/* Filter */}
-          <div style={{ ...sectionStyle, display: 'flex', gap: 8, alignItems: 'center' }}>
-            <span style={{ fontSize: 12, color: theme.text.muted }}>Status:</span>
-            {['all', 'In Arbeit', 'Zu erledigen', 'Billed', 'Fertig', 'Geschlossen'].map(s => (
-              <button key={s} onClick={() => setFilterStatus(s)} style={{
+          {/* Filters */}
+          <div style={{ ...sectionStyle, display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+              <span style={{ fontSize: 12, color: theme.text.muted, minWidth: 65 }}>Kategorie:</span>
+              <button onClick={() => setFilterCategory('all')} style={{
                 padding: '4px 12px', borderRadius: 6, fontSize: 12, cursor: 'pointer',
-                border: `1px solid ${filterStatus === s ? theme.accent : theme.border.subtle}`,
-                backgroundColor: filterStatus === s ? theme.accent + '20' : 'transparent',
-                color: filterStatus === s ? theme.accent : theme.text.secondary,
+                border: `1px solid ${filterCategory === 'all' ? theme.accent : theme.border.subtle}`,
+                backgroundColor: filterCategory === 'all' ? theme.accent + '20' : 'transparent',
+                color: filterCategory === 'all' ? theme.accent : theme.text.secondary,
                 fontFamily: 'inherit',
-              }}>{s === 'all' ? 'Alle' : s}</button>
-            ))}
-            <span style={{ marginLeft: 'auto', fontSize: 12, color: theme.text.muted }}>{filtered.length} Projekte</span>
+              }}>Alle</button>
+              {categoryData.map(c => (
+                <button key={c.name} onClick={() => setFilterCategory(filterCategory === c.name ? 'all' : c.name)} style={{
+                  padding: '4px 12px', borderRadius: 6, fontSize: 12, cursor: 'pointer',
+                  border: `1px solid ${filterCategory === c.name ? (categoryColors[c.name] || theme.accent) : theme.border.subtle}`,
+                  backgroundColor: filterCategory === c.name ? (categoryColors[c.name] || theme.accent) + '20' : 'transparent',
+                  color: filterCategory === c.name ? (categoryColors[c.name] || theme.accent) : theme.text.secondary,
+                  fontFamily: 'inherit',
+                }}>{c.name}</button>
+              ))}
+            </div>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+              <span style={{ fontSize: 12, color: theme.text.muted, minWidth: 65 }}>Status:</span>
+              {['all', 'In Arbeit', 'Zu erledigen', 'Billed', 'Fertig', 'Geschlossen'].map(s => (
+                <button key={s} onClick={() => setFilterStatus(s)} style={{
+                  padding: '4px 12px', borderRadius: 6, fontSize: 12, cursor: 'pointer',
+                  border: `1px solid ${filterStatus === s ? theme.accent : theme.border.subtle}`,
+                  backgroundColor: filterStatus === s ? theme.accent + '20' : 'transparent',
+                  color: filterStatus === s ? theme.accent : theme.text.secondary,
+                  fontFamily: 'inherit',
+                }}>{s === 'all' ? 'Alle' : s}</button>
+              ))}
+              <span style={{ marginLeft: 'auto', fontSize: 12, color: theme.text.muted }}>{filtered.length} Projekte</span>
+            </div>
           </div>
 
           {/* Project table */}
@@ -199,7 +293,7 @@ export function ProjectView({ data, onServiceClick }) {
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
               <thead>
                 <tr>
-                  {['Key', 'Projekt', 'Kunde', 'Status', 'Bearbeiter', 'Sub-Tasks', 'Erstellt'].map(h => (
+                  {['Key', 'Projekt', 'Kategorie', 'Kunde', 'Status', 'Bearbeiter', 'Sub-Tasks', 'Erstellt'].map(h => (
                     <th key={h} style={{ textAlign: 'left', padding: '8px 10px', borderBottom: `1px solid ${theme.border.default}`, color: theme.text.muted, fontWeight: 600, fontSize: 12 }}>{h}</th>
                   ))}
                 </tr>
@@ -213,7 +307,14 @@ export function ProjectView({ data, onServiceClick }) {
                     onMouseLeave={e => e.currentTarget.style.backgroundColor = selectedProject === p.key ? theme.accent + '10' : 'transparent'}
                   >
                     <td style={{ padding: '6px 10px', borderBottom: `1px solid ${theme.border.subtle}`, color: theme.accent, fontFamily: 'monospace', fontSize: 12 }}>{p.key}</td>
-                    <td style={{ padding: '6px 10px', borderBottom: `1px solid ${theme.border.subtle}`, color: theme.text.primary, maxWidth: 300, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.summary}</td>
+                    <td style={{ padding: '6px 10px', borderBottom: `1px solid ${theme.border.subtle}`, color: theme.text.primary, maxWidth: 280, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.summary}</td>
+                    <td style={{ padding: '6px 10px', borderBottom: `1px solid ${theme.border.subtle}` }}>
+                      <span style={{
+                        padding: '2px 8px', borderRadius: 9999, fontSize: 10, fontWeight: 600, whiteSpace: 'nowrap',
+                        backgroundColor: (categoryColors[p.category] || '#8b949e') + '20',
+                        color: categoryColors[p.category] || '#8b949e',
+                      }}>{p.category}</span>
+                    </td>
                     <td style={{ padding: '6px 10px', borderBottom: `1px solid ${theme.border.subtle}`, color: '#fbbf24', fontWeight: 600 }}>{p.customer || '—'}</td>
                     <td style={{ padding: '6px 10px', borderBottom: `1px solid ${theme.border.subtle}` }}>
                       <span style={{

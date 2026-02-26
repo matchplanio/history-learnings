@@ -586,6 +586,55 @@ def analyze(tickets, services, sales, staff_list, units_list):
         m = re.match(r'^([A-Za-zÄÖÜäöüß][A-Za-z0-9äöüÄÖÜß\-_\. ]+?):\s', summary)
         return m.group(1) if m else None
 
+    # Project categorization rules (order matters - first match wins)
+    project_categories = [
+        ("MS365 / Cloud", ["ms365", "microsoft 365", "exchange online", "exchange migration",
+                           "azure", "onedrive", "sharepoint", "m365"]),
+        ("Firewall / Security", ["firewall", "fortinet", "fortigate", "sophos", "xgs",
+                                  "security", "defender", "cryptshare", "bitwarden"]),
+        ("Infrastruktur", ["hardware", "server", "infrastruktur", "hypervisor", "vmware",
+                           "esxi", "esx", "hyper-v", "hyperv", "ibm i", "power", "switches",
+                           "neue switches"]),
+        ("Linux-Consulting", ["linux-consulting"]),
+        ("Migration / vDC", ["vdc", "migration", "migrieren", "umzug", "umstellung"]),
+        ("Backup / Storage", ["backup", "veeam", "storage", "san", "archiv"]),
+        ("Netzwerk / WLAN", ["switch", "wlan", "ubiquiti", "netzwerk", "lte router"]),
+        ("Managed Services", ["msp", "managed", "onboarding", "rollout", "patchmanagement"]),
+        ("Hosting / RZ", ["hosting", "colocation", "housing", "rechenzentrum", "rz"]),
+        ("Citrix / VDI", ["citrix", "vdi", "avd", "rds"]),
+    ]
+
+    # Manual overrides for projects that don't match keyword patterns
+    category_overrides = {
+        "SXPP-1317": "Infrastruktur",       # EY: Implementierung Lab Umgebung
+        "SXPP-999":  "Hosting / RZ",         # TNBW: OpenCompute Nürnberg
+        "SXPP-973":  "Hosting / RZ",         # IBM | sIDP: FRA3 - Neuer Brandabschnitt
+        "SXPP-872":  "Sonstiges",            # SGS Anwendung
+        "SXPP-816":  "Hosting / RZ",         # TNBW - Secured Jira
+        "SXPP-805":  "Managed Services",     # ISP: Upgrade der ARIA Version
+        "SXPP-783":  "Sonstiges",            # Sonderentwicklung: Materialverwaltung
+        "SXPP-686":  "Migration / vDC",      # DAFTRUCKS: Migrate EMES System
+        "SXPP-625":  "Sonstiges",            # Informationssicherheits-Risikomanagement
+        "SXPP-482":  "Sonstiges",            # DAT: Abbildung RM in JIRA
+        "SXPP-475":  "Hosting / RZ",         # TNBW: Atlassian Customizing
+        "SXPP-389":  "Managed Services",     # Ensinger: Mehrwertdienste
+        "SXPP-349":  "MS365 / Cloud",        # Autarq: Implementierung M365
+        "SXPP-434":  "Infrastruktur",        # Eichler: Einrichtung Rechner
+        "SXPP-347":  "Sonstiges",            # GADV: Analyse und Dokumentation
+        "SXPP-209":  "Sonstiges",            # MBG: Tech DD und Beratung
+        "SXPP-268":  "Managed Services",     # Ensinger: Mehrwertdienste
+        "SXPP-3":    "Infrastruktur",        # Testumgebung für BMW
+    }
+
+    def categorize_project(key, summary):
+        if key in category_overrides:
+            return category_overrides[key]
+        s = summary.lower()
+        for cat_name, keywords in project_categories:
+            if any(kw in s for kw in keywords):
+                return cat_name
+        return "Sonstiges"
+
     # Build project list
     project_list = []
     for p in sorted(projekt_tickets, key=lambda x: x.get("created", ""), reverse=True):
@@ -594,17 +643,14 @@ def analyze(tickets, services, sales, staff_list, units_list):
         sub_count = sum(1 for st in subtask_tickets
                        if pk < int(st["key"].split("-")[1]) <= pk + 50
                        and st.get("created", "") >= p.get("created", ""))
-        # Estimate: count sub-tasks with same assignee or within key range
         customer = extract_project_customer(p.get("summary", ""))
-        yearly = Counter()
-        year = (p.get("created") or "")[:4]
-        if year:
-            yearly[year] = 1
+        category = categorize_project(p["key"], p.get("summary", ""))
 
         project_list.append({
             "key": p["key"],
             "summary": p.get("summary", ""),
             "customer": customer,
+            "category": category,
             "status": p.get("status", ""),
             "assignee": p.get("assignee") or "Nicht zugewiesen",
             "created": (p.get("created") or "")[:10],
@@ -618,6 +664,14 @@ def analyze(tickets, services, sales, staff_list, units_list):
     proj_by_year = Counter((p.get("created") or "")[:4] for p in project_list if p.get("created"))
     proj_by_assignee = Counter(p["assignee"] for p in project_list)
     proj_customers = Counter(p["customer"] for p in project_list if p["customer"])
+    proj_by_category = Counter(p["category"] for p in project_list)
+
+    # Category × Year matrix for stacked chart
+    cat_by_year = defaultdict(lambda: Counter())
+    for p in project_list:
+        year = (p.get("created") or "")[:4]
+        if year:
+            cat_by_year[year][p["category"]] += 1
 
     # Sub-task stats
     st_by_status = Counter(st.get("status", "?") for st in subtask_tickets)
@@ -631,6 +685,8 @@ def analyze(tickets, services, sales, staff_list, units_list):
         "byStatus": dict(proj_by_status.most_common()),
         "byYear": dict(sorted(proj_by_year.items())),
         "byAssignee": [{"name": n, "count": c} for n, c in proj_by_assignee.most_common(15)],
+        "byCategory": dict(proj_by_category.most_common()),
+        "categoryByYear": {y: dict(cats) for y, cats in sorted(cat_by_year.items())},
         "customers": [{"name": n, "count": c} for n, c in proj_customers.most_common(30)],
         "subTasksByStatus": dict(st_by_status.most_common()),
         "subTasksByAssignee": [{"name": n, "count": c} for n, c in st_by_assignee.most_common(15)],
