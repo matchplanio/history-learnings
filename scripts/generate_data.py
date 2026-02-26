@@ -16,7 +16,7 @@ import csv
 import re
 from collections import Counter, defaultdict
 from pathlib import Path
-from datetime import date
+from datetime import date, datetime
 
 VAULT = Path(__file__).resolve().parents[3]  # Kultur/
 APP = Path(__file__).resolve().parents[1]     # history-learnings/
@@ -575,6 +575,102 @@ def analyze(tickets, services, sales, staff_list, units_list):
         "totalCustomerTickets": sum(len(v) for v in customer_tickets.values()),
     }
 
+    # ── Project analysis (SXPP) ──
+    sxpp_issues = [t for t in tickets if t.get("project") == "SXPP"]
+    projekt_tickets = [t for t in sxpp_issues if t.get("type") == "Projekt"]
+    subtask_tickets = [t for t in sxpp_issues if t.get("type") == "Sub-Task"]
+    anfahrt_tickets = [t for t in sxpp_issues if t.get("type") == "Anfahrt"]
+
+    # Extract customer from project summary
+    def extract_project_customer(summary):
+        m = re.match(r'^([A-Za-zÄÖÜäöüß][A-Za-z0-9äöüÄÖÜß\-_\. ]+?):\s', summary)
+        return m.group(1) if m else None
+
+    # Build project list
+    project_list = []
+    for p in sorted(projekt_tickets, key=lambda x: x.get("created", ""), reverse=True):
+        pk = int(p["key"].split("-")[1])
+        # Count sub-tasks by proximity (sub-tasks created after project, keys > project key)
+        sub_count = sum(1 for st in subtask_tickets
+                       if pk < int(st["key"].split("-")[1]) <= pk + 50
+                       and st.get("created", "") >= p.get("created", ""))
+        # Estimate: count sub-tasks with same assignee or within key range
+        customer = extract_project_customer(p.get("summary", ""))
+        yearly = Counter()
+        year = (p.get("created") or "")[:4]
+        if year:
+            yearly[year] = 1
+
+        project_list.append({
+            "key": p["key"],
+            "summary": p.get("summary", ""),
+            "customer": customer,
+            "status": p.get("status", ""),
+            "assignee": p.get("assignee") or "Nicht zugewiesen",
+            "created": (p.get("created") or "")[:10],
+            "updated": (p.get("updated") or "")[:10],
+            "priority": p.get("priority") or "None",
+            "subTasks": sub_count,
+        })
+
+    # Project stats
+    proj_by_status = Counter(p["status"] for p in project_list)
+    proj_by_year = Counter((p.get("created") or "")[:4] for p in project_list if p.get("created"))
+    proj_by_assignee = Counter(p["assignee"] for p in project_list)
+    proj_customers = Counter(p["customer"] for p in project_list if p["customer"])
+
+    # Sub-task stats
+    st_by_status = Counter(st.get("status", "?") for st in subtask_tickets)
+    st_by_assignee = Counter(st.get("assignee") or "Nicht zugewiesen" for st in subtask_tickets)
+
+    project_data = {
+        "projects": project_list,
+        "totalProjects": len(projekt_tickets),
+        "totalSubTasks": len(subtask_tickets),
+        "totalAnfahrten": len(anfahrt_tickets),
+        "byStatus": dict(proj_by_status.most_common()),
+        "byYear": dict(sorted(proj_by_year.items())),
+        "byAssignee": [{"name": n, "count": c} for n, c in proj_by_assignee.most_common(15)],
+        "customers": [{"name": n, "count": c} for n, c in proj_customers.most_common(30)],
+        "subTasksByStatus": dict(st_by_status.most_common()),
+        "subTasksByAssignee": [{"name": n, "count": c} for n, c in st_by_assignee.most_common(15)],
+    }
+
+    # ── Revenue data (from PBI Kostengruppe) ──
+    # Hardcoded from PBI query - Kostengruppe revenue by Artikelgruppe
+    revenue_data = [
+        {"artikelgruppe": "managed.cloud", "kostengruppe": "managed.server", "umsatz": 4712377, "db": 4712377, "positionen": 11886},
+        {"artikelgruppe": "Internet", "kostengruppe": "RZ-Dienstleistungen", "umsatz": 4848268, "db": 1613782, "positionen": 503},
+        {"artikelgruppe": "managed.cloud", "kostengruppe": "virtual Datacenter", "umsatz": 2096722, "db": 2096722, "positionen": 6431},
+        {"artikelgruppe": "Internet", "kostengruppe": "Connectivity", "umsatz": 2173793, "db": 373854, "positionen": 1312},
+        {"artikelgruppe": "Internet", "kostengruppe": "WebHosting", "umsatz": 1603053, "db": 1576853, "positionen": 7807},
+        {"artikelgruppe": "managed.cloud", "kostengruppe": "MSP Verträge", "umsatz": 1488933, "db": 1487705, "positionen": 2320},
+        {"artikelgruppe": "Internet", "kostengruppe": "SPLA", "umsatz": 1444820, "db": 494255, "positionen": 1503},
+        {"artikelgruppe": "Internet", "kostengruppe": "CSP (MS365-Abos)", "umsatz": 1358417, "db": 232236, "positionen": 6200},
+        {"artikelgruppe": "Internet", "kostengruppe": "11-Infrastruktur", "umsatz": 1281114, "db": 1277215, "positionen": 1062},
+        {"artikelgruppe": "Internet", "kostengruppe": "WebHousing", "umsatz": 993520, "db": 990060, "positionen": 2846},
+        {"artikelgruppe": "managed.cloud", "kostengruppe": "managed.firewall", "umsatz": 752184, "db": 752184, "positionen": 1077},
+        {"artikelgruppe": "Internet", "kostengruppe": "Domain", "umsatz": 668751, "db": 441126, "positionen": 7043},
+        {"artikelgruppe": "Internet", "kostengruppe": "ISH - Dienstleistung", "umsatz": 543295, "db": 543295, "positionen": 127},
+        {"artikelgruppe": "managed.cloud", "kostengruppe": "managed.clientsec", "umsatz": 532761, "db": 529640, "positionen": 1625},
+        {"artikelgruppe": "Internet", "kostengruppe": "managed.cloud", "umsatz": 480112, "db": 479362, "positionen": 2103},
+        {"artikelgruppe": "managed.cloud", "kostengruppe": "managed.backup", "umsatz": 439610, "db": 439610, "positionen": 2826},
+        {"artikelgruppe": "Internet", "kostengruppe": "ISH - RZ Leistungen", "umsatz": 379816, "db": 256488, "positionen": 174},
+        {"artikelgruppe": "managed.cloud", "kostengruppe": "managed.antispam", "umsatz": 377903, "db": 376020, "positionen": 3118},
+        {"artikelgruppe": "managed.cloud", "kostengruppe": "managed.exchange", "umsatz": 345488, "db": 345463, "positionen": 1683},
+        {"artikelgruppe": "managed.cloud", "kostengruppe": "managed.archive", "umsatz": 288894, "db": 288894, "positionen": 371},
+        {"artikelgruppe": "managed.cloud", "kostengruppe": "managed.monitoring", "umsatz": 249315, "db": 249315, "positionen": 851},
+        {"artikelgruppe": "Internet", "kostengruppe": "Transfervolumen", "umsatz": 221369, "db": 209138, "positionen": 882},
+        {"artikelgruppe": "managed.cloud", "kostengruppe": "managed.Backup4MS365", "umsatz": 174488, "db": 174255, "positionen": 1002},
+        {"artikelgruppe": "managed.cloud", "kostengruppe": "managed.wifi", "umsatz": 68765, "db": 68765, "positionen": 807},
+        {"artikelgruppe": "managed.cloud", "kostengruppe": "TaRZ", "umsatz": 146275, "db": 146275, "positionen": 428},
+        {"artikelgruppe": "managed.cloud", "kostengruppe": "cloud.drive", "umsatz": 133747, "db": 133747, "positionen": 1850},
+        {"artikelgruppe": "Internet", "kostengruppe": "SSL-Zertifikat", "umsatz": 106759, "db": 65141, "positionen": 499},
+        {"artikelgruppe": "Internet", "kostengruppe": "Faxen", "umsatz": 74689, "db": 74689, "positionen": 589},
+        {"artikelgruppe": "Internet", "kostengruppe": "WebHosting (Plesk)", "umsatz": 52546, "db": 52546, "positionen": 649},
+        {"artikelgruppe": "Internet", "kostengruppe": "12-HE/Monat", "umsatz": 259135, "db": 259135, "positionen": 172},
+    ]
+
     # ── Priority analysis ──
     all_matched_tickets = []
     for tix in matched.values():
@@ -632,6 +728,8 @@ def analyze(tickets, services, sales, staff_list, units_list):
         "staff": staff_list,
         "customers": customer_list,
         "customerMeta": customer_meta,
+        "projects": project_data,
+        "revenue": revenue_data,
     }
 
     return output
@@ -669,6 +767,8 @@ def main():
     print(f"  Units: {len(output['units'])}")
     print(f"  Monthly data points: {len(output['monthlyTrend'])}")
     print(f"  Customers: {output['customerMeta']['totalCustomers']} ({output['customerMeta']['totalCustomerTickets']} tickets)")
+    print(f"  Projects: {output['projects']['totalProjects']} ({output['projects']['totalSubTasks']} sub-tasks)")
+    print(f"  Revenue groups: {len(output['revenue'])}")
     print(f"  Unmatched top words: {', '.join(w['word'] for w in output['unmatched']['topWords'][:10])}")
 
 if __name__ == "__main__":
