@@ -7,12 +7,14 @@ import { ServiceDetail } from './views/ServiceDetail'
 import { CategoryView } from './views/CategoryView'
 import { UnitView } from './views/UnitView'
 import { UnmatchedView } from './views/UnmatchedView'
+import { CustomerView } from './views/CustomerView'
 
 const navItems = [
   { id: 'services', label: 'Services', icon: '◆' },
   { id: 'team', label: 'Team', icon: '◇' },
   { id: 'trends', label: 'Trends', icon: '▤' },
   { id: 'categories', label: 'Kategorien', icon: '◈' },
+  { id: 'customers', label: 'Kunden', icon: '◎' },
   { id: 'units', label: 'Units', icon: '⊞' },
   { id: 'unmatched', label: 'Unmatched', icon: '⊘' },
 ]
@@ -182,6 +184,7 @@ function App() {
         )}
         {currentView === 'trends' && <TrendView data={data} />}
         {currentView === 'categories' && <CategoryView data={data} onServiceClick={openService} />}
+        {currentView === 'customers' && <CustomerView data={data} onServiceClick={openService} />}
         {currentView === 'units' && <UnitView data={data} onServiceClick={openService} />}
         {currentView === 'unmatched' && <UnmatchedView data={data} />}
       </main>

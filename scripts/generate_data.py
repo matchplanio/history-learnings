@@ -123,8 +123,15 @@ def build_matchers(services):
     # Aliases: additional patterns that match to a service
     ALIASES = {
         "Managed Infrastruktur": [r"infrastruktur", r"infra\b"],
-        "Managed Backup & DR": [r"backup", r"veeam", r"\bDR\b", r"disaster.?recovery"],
-        "Managed Monitoring": [r"monitoring", r"checkmk.*monitor", r"monitor.*check"],
+        "Managed Backup & DR": [r"backup", r"veeam", r"\bDR\b", r"disaster.?recovery",
+                                 r"\[Success\]", r"\[Failed\]", r"\[Warning\].*Backup",
+                                 r"Backup to Tape", r"Backup to Disk", r"Backup VMware",
+                                 r"Client Backup", r"Backup_Master", r"NAS.*Laufwerkszustand",
+                                 r"Festplattenintegrit", r"Wiederherstellungstest",
+                                 r"Rücksicherung"],
+        "Managed Monitoring": [r"monitoring", r"checkmk.*monitor", r"monitor.*check",
+                                r"levigo-Mon:", r"AUTO-GRAYLOG", r"Check_MK:",
+                                r"[a-z]-esx-\d+\.intern\.levigo", r"Graylog"],
         "Managed MS Exchange Server": [r"exchange", r"exchange.?server"],
         "Managed Microsoft 365": [r"microsoft\s*365", r"\bM365\b", r"office\s*365", r"\bO365\b"],
         "Managed Cryptshare": [r"cryptshare"],
@@ -136,13 +143,16 @@ def build_matchers(services):
         "Managed Baramundi": [r"baramundi"],
         "levigo cloud.drive": [r"cloud\.?drive", r"clouddrive"],
         "Kaspersky aaS": [r"kaspersky"],
-        "Managed Windows Server & AD": [r"windows.?server", r"active.?directory", r"\bAD\b.*managed"],
+        "Managed Windows Server & AD": [r"windows.?server", r"active.?directory", r"\bAD\b.*managed",
+                                         r"WSUS"],
         "levigo managed.archive": [r"managed\.?archive", r"archiv"],
         "Managed MS SQL Server": [r"sql.?server", r"mssql"],
         "Patchmanagement (Windows)": [r"patch.*windows", r"windows.*patch"],
         "Patchmanagement (Linux)": [r"patch.*linux", r"linux.*patch"],
-        "levigo AntiSpam": [r"antispam", r"anti.?spam", r"spam.*filter"],
-        "Managed Endpointsecurity": [r"endpoint.*security", r"endpoint.*protection"],
+        "levigo AntiSpam": [r"antispam", r"anti.?spam", r"spam.*filter", r"SPOOF"],
+        "Managed Endpointsecurity": [r"endpoint.*security", r"endpoint.*protection",
+                                      r"Sophos.*Firewall", r"\*ALERT\*.*Sophos",
+                                      r"Ninja.*Agent", r"Ninja Monitoring"],
         "Managed Linux Server": [r"linux.?server"],
         "Managed Bizzdesign Horizzon": [r"bizzdesign", r"horizzon"],
         "Managed MDM": [r"\bMDM\b", r"mobile.?device"],
@@ -152,7 +162,7 @@ def build_matchers(services):
         "Housing": [r"\bhousing\b", r"colocation", r"coloc"],
         "Managed KEMP": [r"\bKEMP\b", r"loadbalancer", r"load.?balancer"],
         "Managed Openshift": [r"openshift"],
-        "Service Desk": [r"service.?desk"],
+        "Service Desk": [r"service.?desk", r"Anfahrt\b", r"Callback\b", r"Regelwartung"],
         "TaRZ": [r"\bTaRZ\b"],
         "S3 aaS": [r"\bS3\b.*aaS", r"object.?storage"],
         "Kubernetes aaS on VDC (Addon zu CCP)": [r"kubernetes", r"\bk8s\b"],
@@ -162,7 +172,7 @@ def build_matchers(services):
         "Externer ISB": [r"externer.*ISB", r"\bISB\b"],
         "1Password operating": [r"1password", r"1Password"],
         "Managed Mattermost": [r"mattermost"],
-        "Managed Firewall": [r"managed.*firewall"],
+        "Managed Firewall": [r"managed.*firewall", r"\bFirewall\b"],
         "Secure Remote Browsing": [r"remote.?browsing"],
         "Checkmk operating": [r"checkmk", r"check_mk"],
         "levigo CCP": [r"\bCCP\b", r"cloud.?computing.?platform"],
@@ -171,6 +181,8 @@ def build_matchers(services):
         "managed.backup für M365": [r"backup.*M365", r"M365.*backup", r"backup.*microsoft.*365"],
         "Cyber Risiko Check (nach DIN Spec 27076)": [r"cyber.*risiko", r"DIN.*27076"],
         "vCIO": [r"\bvCIO\b"],
+        "Managed Networking (LAN)": [r"\bLAN\b", r"Netzwerk", r"Switch\b"],
+        "levigo Internet-Services": [r"VPN\b", r"Internet.*Service"],
     }
 
     matchers = []
@@ -194,6 +206,26 @@ def match_ticket(ticket, matchers):
     for name, pattern in matchers:
         if pattern.search(text):
             return name
+    return None
+
+# ── Customer Extraction ──
+
+# Internal system prefixes (not real customers)
+SYSTEM_PREFIXES = {"levigo-Mon", "Check_MK", "AUTO-GRAYLOG"}
+ESX_RE = re.compile(r'^[a-z]-esx-\d+')
+
+def extract_customer(ticket):
+    """Extract customer name from ticket summary prefix pattern 'Customer: ...'"""
+    summary = ticket.get("summary", "")
+    m = re.match(r'^([A-Za-zÄÖÜäöüß][A-Za-z0-9äöüÄÖÜß\-_\.]+?):\s', summary)
+    if m:
+        prefix = m.group(1)
+        if prefix in SYSTEM_PREFIXES or ESX_RE.match(prefix):
+            return None
+        # Skip very long prefixes (likely not customer names)
+        if len(prefix) > 25:
+            return None
+        return prefix
     return None
 
 # ── Analysis ──
@@ -427,6 +459,72 @@ def analyze(tickets, services, sales, staff_list, units_list):
             "serviceNames": data["serviceNames"],
         })
 
+    # ── Customer analysis ──
+    customer_tickets = defaultdict(list)
+    for t in tickets:
+        cust = extract_customer(t)
+        if cust:
+            customer_tickets[cust].append(t)
+
+    # Build customer profiles (top 50 by ticket count)
+    customer_list = []
+    for cust_name, tix in sorted(customer_tickets.items(), key=lambda x: -len(x[1])):
+        if len(tix) < 3:  # skip customers with < 3 tickets
+            continue
+        yearly = Counter()
+        monthly = Counter()
+        by_type = Counter()
+        by_status = Counter()
+        services_matched = Counter()
+        incidents = 0
+        for t in tix:
+            year = t.get("created", "")[:4]
+            month = t.get("created", "")[:7]
+            if year: yearly[year] += 1
+            if month: monthly[month] += 1
+            by_type[t.get("type", "Unknown")] += 1
+            by_status[t.get("status", "Unknown")] += 1
+            if t.get("type") == "Incident":
+                incidents += 1
+            svc = match_ticket(t, matchers)
+            if svc:
+                services_matched[svc] += 1
+
+        # Assignees for this customer
+        assignees = Counter(t.get("assignee") for t in tix if t.get("assignee"))
+
+        # Active period
+        years = sorted(yearly.keys())
+        active_since = years[0] if years else ""
+        last_active = years[-1] if years else ""
+
+        customer_list.append({
+            "name": cust_name,
+            "tickets": len(tix),
+            "incidents": incidents,
+            "incidentRate": round(incidents / len(tix) * 100, 1) if tix else 0,
+            "services": [{"name": n, "count": c} for n, c in services_matched.most_common(10)],
+            "servicesCount": len(services_matched),
+            "matchedTickets": sum(services_matched.values()),
+            "matchRate": round(sum(services_matched.values()) / len(tix) * 100, 1) if tix else 0,
+            "topAssignees": [{"name": n, "count": c} for n, c in assignees.most_common(5)],
+            "yearlyTickets": dict(sorted(yearly.items())),
+            "monthlyTickets": dict(sorted(monthly.items())),
+            "byType": dict(by_type.most_common()),
+            "byStatus": dict(by_status.most_common()),
+            "activeSince": active_since,
+            "lastActive": last_active,
+        })
+
+    # Only keep top 80 customers for data size
+    customer_list = customer_list[:80]
+
+    customer_meta = {
+        "totalCustomers": len(customer_tickets),
+        "customersWithTickets": len([c for c in customer_list if c["tickets"] >= 3]),
+        "totalCustomerTickets": sum(len(v) for v in customer_tickets.values()),
+    }
+
     # ── Priority analysis ──
     all_matched_tickets = []
     for tix in matched.values():
@@ -482,6 +580,8 @@ def analyze(tickets, services, sales, staff_list, units_list):
             "blockerCount": len(blocker_tickets),
         },
         "staff": staff_list,
+        "customers": customer_list,
+        "customerMeta": customer_meta,
     }
 
     return output
@@ -518,6 +618,7 @@ def main():
     print(f"  Categories: {len(output['categories'])}")
     print(f"  Units: {len(output['units'])}")
     print(f"  Monthly data points: {len(output['monthlyTrend'])}")
+    print(f"  Customers: {output['customerMeta']['totalCustomers']} ({output['customerMeta']['totalCustomerTickets']} tickets)")
     print(f"  Unmatched top words: {', '.join(w['word'] for w in output['unmatched']['topWords'][:10])}")
 
 if __name__ == "__main__":
