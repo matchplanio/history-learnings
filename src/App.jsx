@@ -4,11 +4,17 @@ import { ServiceDashboard } from './views/ServiceDashboard'
 import { TeamView } from './views/TeamView'
 import { TrendView } from './views/TrendView'
 import { ServiceDetail } from './views/ServiceDetail'
+import { CategoryView } from './views/CategoryView'
+import { UnitView } from './views/UnitView'
+import { UnmatchedView } from './views/UnmatchedView'
 
 const navItems = [
   { id: 'services', label: 'Services', icon: '◆' },
   { id: 'team', label: 'Team', icon: '◇' },
   { id: 'trends', label: 'Trends', icon: '▤' },
+  { id: 'categories', label: 'Kategorien', icon: '◈' },
+  { id: 'units', label: 'Units', icon: '⊞' },
+  { id: 'unmatched', label: 'Unmatched', icon: '⊘' },
 ]
 
 function App() {
@@ -100,6 +106,9 @@ function App() {
           <div style={{ fontSize: 11, color: theme.text.muted, marginTop: 2 }}>
             {data.meta.servicesWithMatches} Services ({data.meta.matchRate}%)
           </div>
+          <div style={{ fontSize: 11, color: theme.text.muted, marginTop: 2 }}>
+            {data.meta.totalStaff || 0} Mitarbeitende, {data.meta.activeUnits || 0} Units
+          </div>
         </div>
 
         {/* Navigation */}
@@ -172,6 +181,9 @@ function App() {
           <TeamView data={data} selectedPerson={selectedPerson} onServiceClick={openService} />
         )}
         {currentView === 'trends' && <TrendView data={data} />}
+        {currentView === 'categories' && <CategoryView data={data} onServiceClick={openService} />}
+        {currentView === 'units' && <UnitView data={data} onServiceClick={openService} />}
+        {currentView === 'unmatched' && <UnmatchedView data={data} />}
       </main>
     </div>
   )
