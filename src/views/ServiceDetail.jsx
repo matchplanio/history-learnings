@@ -29,7 +29,18 @@ export function ServiceDetail({ service, onBack, onPersonClick }) {
       </span>
 
       <div style={{ marginBottom: 20 }}>
-        <h2 style={{ fontSize: 22, fontWeight: 700, color: theme.text.primary, marginBottom: 8 }}>{service.name}</h2>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
+          <h2 style={{ fontSize: 22, fontWeight: 700, color: theme.text.primary, margin: 0 }}>{service.name}</h2>
+          <a
+            href={`https://levigo-bi.vercel.app/#service-mapping`}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 4, color: theme.text.muted, textDecoration: 'none', fontSize: 11, padding: '3px 10px', borderRadius: 9999, border: `1px solid ${theme.border.subtle}`, transition: 'all 0.15s' }}
+            onMouseEnter={e => { e.currentTarget.style.color = theme.accent; e.currentTarget.style.borderColor = theme.accent }}
+            onMouseLeave={e => { e.currentTarget.style.color = theme.text.muted; e.currentTarget.style.borderColor = theme.border.subtle }}
+            title="Revenue-Zuordnung in PBI App"
+          >PBI Mapping ↗</a>
+        </div>
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
           <span style={statusBadge(service.status)}>{service.status}</span>
           {service.type && <span style={typeBadge}>{service.type}</span>}

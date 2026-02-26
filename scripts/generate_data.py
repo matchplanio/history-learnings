@@ -148,7 +148,25 @@ ALIASES = {
                                    # Server hostname alerts (FQDN prefixed)
                                    r"^[A-Za-z0-9\-]+\.(?:intern|local|levigo)\.",
                                    # Generic hardware
-                                   r"[Kk]abel.*(?:defekt|tausch|ersetzen)"],
+                                   r"[Kk]abel.*(?:defekt|tausch|ersetzen)",
+                                   # Battery test (UPS auto-reports)
+                                   r"[Bb]attery\s+test\s+(?:active|done|failed|result)",
+                                   # IBM DC / datacenter notifications
+                                   r"^\[IBM-DC\]", r"IBM-DC.*(?:Wartungsarbeiten|Störung|Change|Reboot)",
+                                   # IBM Storwize / V3700 / HMC alerts
+                                   r"\d{4}\s+Warning\s+Event\s+Notification\s+\(",
+                                   r"xpcluster|V3700|Storwize",
+                                   r"IBM[\s\-]i\b|iSeries|AS400",
+                                   r"ekzHMC\d+",
+                                   r"Transmission of (?:FLRT|Disk Health|Hardware Service)",
+                                   # IBM general hardware/storage/maintenance
+                                   r"\bIBM\b.*(?:TS4300|Storage|Laufwerk|defekt|hardware|install|server|Einbau)",
+                                   r"\bIBM\b.*(?:Access Client|FixCentral|SAN|Wartung)",
+                                   # iDRAC / Dell alerts
+                                   r"\biDRAC\b", r"\bIDRAC\b", r"\[.*-IDRAC\]",
+                                   # NIC port down alerts
+                                   r"(?:Embedded|Integrated)\s+NIC.*(?:down|link)",
+                                   r"network\s+link\s+is\s+down"],
         "Managed Backup & DR": [r"backup", r"veeam", r"\bDR\b", r"disaster.?recovery",
                                  r"\[Success\]", r"\[Failed\]", r"\[Warning\].*(?:Backup|objects?)",
                                  r"Backup to Tape", r"Backup to Disk", r"Backup VMware",
@@ -186,6 +204,8 @@ ALIASES = {
                                 r"\bevent\b.*(?:occured|triggered|warning|error)",
                                 # Location-based alerts (RZ sites)
                                 r"(?:alert|Alert).*(?:NBG|MUC|FRA|NUE)",
+                                # Error Notification (storage system alerts)
+                                r"\d{4}\s+Error\s+Notification",
                                 # CMC / WWDFV monitoring
                                 r"\bCMC\b.*WWDFV", r"WWDFV",
                                 # RMM tools (Ninja, Datto)
@@ -260,9 +280,14 @@ ALIASES = {
                                       r"Ninja.*Agent", r"Ninja Monitoring",
                                       r"\bVirus\b", r"\bMalware\b", r"Trojaner",
                                       r"\bBitdefender\b",
+                                      # Microsoft Defender
+                                      r"[Mm]icrosoft\s+[Dd]efender",
+                                      r"[Dd]efender.*(?:Endpoint|install|konfigur|ausnahme|meldet)",
+                                      r"[Vv]ulnerabilit(?:y|ies).*(?:notification|Defender)",
                                       # Clientsecurity events
                                       r"clientsecurity.*event", r"ClientSecurity"],
-        "Managed Linux Server": [r"linux.?server"],
+        "Managed Linux Server": [r"linux.?server",
+                                  r"unattended-upgrades result"],
         "Managed Bizzdesign Horizzon": [r"bizzdesign", r"horizzon",
                                         r"[Hh]orizon\s*[Ii]mage"],
         "Managed MDM": [r"\bMDM\b", r"mobile.?device"],
@@ -278,7 +303,14 @@ ALIASES = {
                      # RZ operations / datacenter
                      r"[Rr]echenzentrum", r"\bRZ\b.*(?:Begehung|Zutritt|Zugang)",
                      r"[Rr]ack\s*[A-Z]?\s*(?:Door|Tür|Handle)",
-                     r"[Cc]age", r"[Bb]randabschnitt"],
+                     r"[Cc]age", r"[Bb]randabschnitt",
+                     # IBM datacenter operations (eRP, ePA, SekIDP in MUC/NUE/FRA)
+                     r"IBM.*(?:eRP|ePA|sIDP|SekIDP|eGK).*(?:MUC|NUE|FRA|NorthC|Colo)",
+                     r"(?:eRP|ePA|SekIDP).*(?:PU|RU|TU)\s*[-–]",
+                     r"(?:eRP|ePA|SekIDP).*(?:install|server|rack|zone|SAN|NIC|cabling)",
+                     r"IBM\s*\|.*(?:eRP|ePA|sIDP|SekIDP)",
+                     # Colo / datacenter access
+                     r"[Cc]olo\s*\d+", r"Zugang.*(?:Colo|RZ|Rechenzentrum)"],
         "Managed KEMP": [r"\bKEMP\b", r"loadbalancer", r"load.?balancer"],
         "Managed Openshift": [r"openshift"],
         "Service Desk": [r"service.?desk", r"Anfahrt\b", r"Callback\b", r"Regelwartung",
@@ -344,7 +376,29 @@ ALIASES = {
                           # Training / Ausbildung
                           r"\b[Aa]usbildung\b",
                           # Generic support keywords
-                          r"\bUnterstützung\b", r"\bHilfe\b.*(?:bei|mit|zu)"],
+                          r"\bUnterstützung\b", r"\bHilfe\b.*(?:bei|mit|zu)",
+                          # Forwarded emails (WG = Weitergeleitet)
+                          r"^WG:\s",
+                          # Aareon ticket forwarding
+                          r"<Aareon_Ticket:\d+>",
+                          # Broader access/permission requests
+                          r"[Zz]ugriff\s+auf",
+                          r"[Zz]ugang\s+(?:für|fuer|zu|einrichten|beantragen|erstellen)",
+                          r"[Bb]erechtigung.*(?:einrichten|erteilen|entziehen|ändern|prüfen)",
+                          r"[Ff]reigabe.*(?:erteilen|prüfen|beantragen)",
+                          r"[Ff]reischalt", r"[Ee]ntsperr",
+                          # Generic IT problems / nicht-Muster
+                          r"(?:kann|lässt)\s+sich\s+nicht",
+                          r"geht\s+nicht\s+mehr",
+                          r"(?:Probleme?|Problem)\s+(?:mit|bei|beim)",
+                          # Umzug (office/workplace moves)
+                          r"[Uu]mzug",
+                          # Defekt/broken hardware
+                          r"\bdefekt\b",
+                          # User/Konto requests
+                          r"(?:neues?|neuer?)\s+(?:Konto|Account|Zugang|Benutzerkonto)",
+                          # Bitte um / request patterns
+                          r"[Bb]itte\s+(?:um|den|die|das)\s+(?:Einrichtung|Zugang|Freischaltung|Zugriff)"],
         "TaRZ": [r"\bTaRZ\b"],
         "S3 aaS": [r"\bS3\b.*aaS", r"object.?storage", r"\bS3\b.*(?:bucket|storage)"],
         "Kubernetes aaS on VDC (Addon zu CCP)": [r"kubernetes", r"\bk8s\b"],
@@ -374,7 +428,8 @@ ALIASES = {
         "Cyber Risiko Check (nach DIN Spec 27076)": [r"cyber.*risiko", r"DIN.*27076"],
         "vCIO": [r"\bvCIO\b"],
     "levigo Internet-Services": [r"VPN\b", r"Internet.*Service",
-                                  r"\bDomain\b.*(?:registrier|umzug|DNS|verlänger|kündigen)",
+                                  r"\bDomain\b.*(?:registrier|umzug|DNS|verlänger|kündigen|tausch|reserv|zugriff)",
+                                  r"[Ss]ub.?[Dd]omain", r"[Dd]omain\b.*(?:für|fuer|einricht)",
                                   r"\bDNS\b.*(?:eintrag|änder|zone)",
                                   # SSL / Zertifikate
                                   r"\bSSL\b", r"\bTLS\b", r"[Zz]ertifikat",
@@ -384,7 +439,10 @@ ALIASES = {
                                   # Broader internet/DNS
                                   r"DNS.*(?:problem|fehler|nicht auflös)",
                                   r"Internet.*(?:langsam|down|ausfall|störung|geht nicht)",
-                                  r"Leitung.*(?:störung|ausfall|down)"],
+                                  r"Leitung.*(?:störung|ausfall|down)",
+                                  # ISP/Carrier maintenance (RETN, DECIX etc.)
+                                  r"\bRETN\b",
+                                  r"Wartungsarbeiten.*(?:RETN|DECIX|Colt|NorthC|Core-Backbone)"],
 }
 
 def build_matchers(services):
@@ -408,12 +466,24 @@ def build_matchers(services):
     # Description-safe patterns: only highly specific terms that won't
     # appear in backup footers, email signatures, or ticket boilerplate
     DESC_SAFE_ALIASES = {
-        "Managed Backup & DR": [r"backup", r"veeam", r"disaster.?recovery", r"Wiederherstellungstest"],
-        "Managed Monitoring": [r"Check_MK:", r"levigo-Mon:", r"AUTO-GRAYLOG", r"Graylog"],
-        "Managed Infrastruktur": [r"vCenter", r"vmware", r"Dell PowerEdge"],
-        "Managed Firewall": [r"\bFirewall\b", r"\bFortiGate\b"],
-        "Managed Endpointsecurity": [r"Sophos.*Endpoint", r"\bMalware\b", r"\bVirus\b"],
-        "Managed Citrix": [r"citrix"],
+        "Managed Backup & DR": [r"backup", r"veeam", r"disaster.?recovery",
+                                 r"Wiederherstellungstest", r"Rücksicherung",
+                                 r"\[Success\]", r"\[Failed\]"],
+        "Managed Monitoring": [r"Check_MK:", r"levigo-Mon:", r"AUTO-GRAYLOG",
+                                r"Graylog", r"\[CRIT\]", r"\[DOWN\]"],
+        "Managed Infrastruktur": [r"vCenter", r"vmware", r"Dell PowerEdge",
+                                   r"\bESXi?\b", r"Patrol\s*Read"],
+        "Managed Firewall": [r"\bFirewall\b", r"\bFortiGate\b", r"\bFortiOS\b"],
+        "Managed Endpointsecurity": [r"Sophos.*(?:Endpoint|Firewall|UTM)",
+                                      r"\bMalware\b", r"\bVirus\b", r"\bTrojaner\b"],
+        "Managed Citrix": [r"citrix", r"Terminal.?[Ss]erver"],
+        "Managed MS Exchange Server": [r"\bexchange\b", r"\boutlook\b",
+                                        r"\bpostfach\b", r"MailStore"],
+        "Managed Windows Server & AD": [r"[Aa]ctive.?[Dd]irectory", r"\bGPO\b",
+                                          r"[Gg]ruppenrichtlinie", r"\bWSUS\b"],
+        "Service Desk": [r"[Zz]ugriff\s+auf", r"[Zz]ugang\s+(?:für|zu|einrichten)",
+                          r"\bdefekt\b", r"(?:kann|lässt)\s+sich\s+nicht",
+                          r"[Dd]rucker", r"[Pp]rinter"],
     }
     for name, patterns in DESC_SAFE_ALIASES.items():
         for pat in patterns:
