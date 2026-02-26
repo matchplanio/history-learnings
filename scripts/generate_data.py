@@ -18,7 +18,7 @@ from collections import Counter, defaultdict
 from pathlib import Path
 from datetime import date, datetime
 
-VAULT = Path(__file__).resolve().parents[3]  # Kultur/
+VAULT = Path(__file__).resolve().parents[4]  # Kultur/
 APP = Path(__file__).resolve().parents[1]     # history-learnings/
 CODA = VAULT / "_Rohdaten" / "Coda" / "2026-01-25"
 DATA = VAULT / "_System" / "_Data"
@@ -136,17 +136,38 @@ ALIASES = {
                                  r"Rücksicherung",
                                  # Storage alerts
                                  r"\[?[A-Z0-9]+-STO-[A-Z0-9]+\]?", r"RZ[0-9]-STO",
-                                 r"Laufwerkszustandsbericht"],
+                                 r"Laufwerkszustandsbericht",
+                                 # Filesystem / storage alerts
+                                 r"\bfilesystem\b", r"disk\s*space", r"storage\s*(?:alert|warning|full|low)",
+                                 r"Speicherplatz", r"Platte.*voll", r"volume.*(?:full|low|critical)"],
         "Managed Monitoring": [r"monitoring", r"checkmk.*monitor", r"monitor.*check",
                                 r"levigo-Mon:", r"AUTO-GRAYLOG", r"Check_MK:",
                                 r"[a-z]-esx-\d+\.intern\.levigo", r"Graylog",
                                 # Notification / license alerts
-                                r"Notification.*license", r"license.*(?:invalid|issue|expir)"],
+                                r"Notification.*license", r"license.*(?:invalid|issue|expir)",
+                                # System alert hostnames (Checkmk/Graylog alerts with hostname prefix)
+                                r"\bbaresel\b", r"\bacps\b", r"\bbebion\b",
+                                r"\btcon\b", r"\bqulog\b", r"\bhald\b",
+                                r"\bpmon\b", r"\bsmon\b",
+                                # Alert severity patterns
+                                r"\[CRIT\]", r"\[CRITICAL\]", r"\[WARNING\](?!.*[Bb]ackup)",
+                                r"\[DOWN\]", r"\[UNREACHABLE\]", r"\[RECOVERY\]",
+                                r"\[OK\].*(?:host|service|check)",
+                                # Generic monitoring alert patterns
+                                r"(?:Host|Service)\s+(?:Alert|Notification)",
+                                r"PROBLEM\s+[-–]", r"RECOVERY\s+[-–]",
+                                # More alert patterns from unmatched analysis
+                                r"\balert\b.*(?:event|notification|warning|critical)",
+                                r"\bevent\b.*(?:occured|triggered|warning|error)"],
         "Managed MS Exchange Server": [r"exchange", r"exchange.?server",
                                         # Outlook / Mail problems → Exchange service
                                         r"\boutlook\b", r"\bpostfach\b", r"e-?mail.*(?:problem|fehler|geht nicht)",
                                         r"outlook.*(?:verbind|sync|hängt|absturz|langsam|fehler|problem|geht nicht)",
-                                        r"mail.*(?:empfang|versand|kommt nicht|geht nicht|problem|fehler)"],
+                                        r"mail.*(?:empfang|versand|kommt nicht|geht nicht|problem|fehler)",
+                                        # Broader mail patterns
+                                        r"\bmail\b.*(?:server|relay|queue|delivery|bounce)",
+                                        r"\bSMTP\b", r"\bIMAP\b", r"\bPOP3?\b",
+                                        r"Mailbox.*(?:full|voll|quota)", r"Postausgang"],
         "Managed Microsoft 365": [r"microsoft\s*365", r"\bM365\b", r"office\s*365", r"\bO365\b",
                                    r"\bTeams\b.*(?:problem|fehler|geht nicht)",
                                    r"\bSharePoint\b", r"\bOneDrive\b"],
@@ -166,7 +187,9 @@ ALIASES = {
         "levigo managed.archive": [r"managed\.?archive", r"archiv"],
         "Managed MS SQL Server": [r"sql.?server", r"mssql"],
         "Patchmanagement (Windows)": [r"patch.*windows", r"windows.*patch",
-                                       r"Windows.*Update", r"Update.*Windows"],
+                                       r"Windows.*Update", r"Update.*Windows",
+                                       r"WSUS.*(?:update|sync|fehler)", r"Patchday",
+                                       r"(?:Sicherheits|Security).*[Uu]pdate"],
         "Patchmanagement (Linux)": [r"patch.*linux", r"linux.*patch"],
         "levigo AntiSpam": [r"antispam", r"anti.?spam", r"spam.*filter", r"SPOOF"],
         "Managed Endpointsecurity": [r"endpoint.*security", r"endpoint.*protection",
@@ -189,9 +212,23 @@ ALIASES = {
                           r"Onboarding",
                           # Printer
                           r"[Dd]rucker", r"[Pp]rinter", r"[Dd]rucken",
-                          r"Papierstau", r"Toner"],
+                          r"Papierstau", r"Toner",
+                          # Generic support / desk requests
+                          r"Passwort.*(?:reset|zurück|änder|vergessen)",
+                          r"Zugang.*(?:gesperrt|einrichten|freischalt)",
+                          r"Benutzer.*(?:anlegen|erstellen|sperren|entsperren)",
+                          r"Umzug.*(?:Arbeitsplatz|Büro|Raum)",
+                          r"\bHeadset\b", r"\bMonitor\b.*(?:defekt|tausch|neu)",
+                          r"\bDocking\b", r"\bBeamer\b",
+                          # Access / permission requests
+                          r"[Zz]ugriff.*(?:einrichten|fehlt|kein|beantrag|freischalt)",
+                          r"[Ww]artung\b", r"[Ii]nstallation\b",
+                          # Generic IT support
+                          r"(?:funktioniert|geht).*nicht",
+                          r"nicht.*(?:erreichbar|verfügbar)",
+                          r"Telefon.*(?:problem|defekt|tausch|einrichten)"],
         "TaRZ": [r"\bTaRZ\b"],
-        "S3 aaS": [r"\bS3\b.*aaS", r"object.?storage"],
+        "S3 aaS": [r"\bS3\b.*aaS", r"object.?storage", r"\bS3\b.*(?:bucket|storage)"],
         "Kubernetes aaS on VDC (Addon zu CCP)": [r"kubernetes", r"\bk8s\b"],
         "Stundenkontingent": [r"stundenkontingent", r"kontingent"],
         "Projektmanagement": [r"projektmanagement"],
@@ -199,7 +236,9 @@ ALIASES = {
         "Externer ISB": [r"externer.*ISB", r"\bISB\b"],
         "1Password operating": [r"1password", r"1Password"],
         "Managed Mattermost": [r"mattermost"],
-        "Managed Firewall": [r"managed.*firewall", r"\bFirewall\b"],
+        "Managed Firewall": [r"managed.*firewall", r"\bFirewall\b",
+                              r"\bFortiGate\b", r"\bFortiOS\b", r"\bUTM\b",
+                              r"VPN.*(?:tunnel|verbind|connect|down|problem)"],
         "Secure Remote Browsing": [r"remote.?browsing"],
         "Checkmk operating": [r"checkmk", r"check_mk"],
         "levigo CCP": [r"\bCCP\b", r"cloud.?computing.?platform",
@@ -209,7 +248,9 @@ ALIASES = {
         "managed.backup für M365": [r"backup.*M365", r"M365.*backup", r"backup.*microsoft.*365"],
         "Cyber Risiko Check (nach DIN Spec 27076)": [r"cyber.*risiko", r"DIN.*27076"],
         "vCIO": [r"\bvCIO\b"],
-    "levigo Internet-Services": [r"VPN\b", r"Internet.*Service"],
+    "levigo Internet-Services": [r"VPN\b", r"Internet.*Service",
+                                  r"\bDomain\b.*(?:registrier|umzug|DNS|verlänger|kündigen)",
+                                  r"\bDNS\b.*(?:eintrag|änder|zone)"],
 }
 
 def build_matchers(services):
@@ -260,7 +301,9 @@ def match_ticket(ticket, matchers):
 # ── Customer Extraction ──
 
 # Internal system prefixes (not real customers)
-SYSTEM_PREFIXES = {"levigo-Mon", "Check_MK", "AUTO-GRAYLOG"}
+SYSTEM_PREFIXES = {"levigo-Mon", "Check_MK", "AUTO-GRAYLOG",
+                    "baresel", "acps", "bebion", "tcon", "qulog", "hald",
+                    "pmon", "smon", "Fwd", "Re", "AW", "WG"}
 ESX_RE = re.compile(r'^[a-z]-esx-\d+')
 
 def extract_customer(ticket):
