@@ -1,24 +1,20 @@
 import { useState, useMemo } from 'react'
+import { theme } from '../config/theme'
 
 export function TeamView({ data, selectedPerson, onServiceClick }) {
   const [search, setSearch] = useState('')
   const [sort, setSort] = useState('tickets')
 
-  // teamProfiles is a dict {name: {totalTickets, topServices, yearlyTickets}}
   const teamList = useMemo(() => {
     return Object.entries(data.teamProfiles).map(([name, profile]) => ({
       name,
       totalTickets: profile.totalTickets,
       services: profile.topServices || [],
-      yearlyTickets: profile.yearlyTickets || {}
     }))
   }, [data])
 
   const filtered = useMemo(() => {
-    let list = teamList.filter(p => {
-      if (search && !p.name.toLowerCase().includes(search.toLowerCase())) return false
-      return true
-    })
+    let list = teamList.filter(p => !search || p.name.toLowerCase().includes(search.toLowerCase()))
     list.sort((a, b) => {
       if (sort === 'tickets') return b.totalTickets - a.totalTickets
       if (sort === 'name') return a.name.localeCompare(b.name)
@@ -28,53 +24,77 @@ export function TeamView({ data, selectedPerson, onServiceClick }) {
     return list
   }, [teamList, search, sort])
 
+  const selectStyle = {
+    padding: '6px 10px', borderRadius: 6, border: `1px solid ${theme.border.default}`,
+    backgroundColor: theme.bg.input, color: theme.text.primary, fontSize: 13, fontFamily: 'inherit', outline: 'none',
+  }
+
   return (
     <div>
-      <div className="filters">
-        <span className="filter-label">Sort:</span>
-        <select value={sort} onChange={e => setSort(e.target.value)}>
+      <div style={{ marginBottom: 20 }}>
+        <h2 style={{ fontSize: 20, fontWeight: 700, color: theme.text.primary, marginBottom: 4 }}>Team</h2>
+        <p style={{ fontSize: 13, color: theme.text.muted }}>Service-Kompetenzprofile basierend auf Ticket-Zuweisungen</p>
+      </div>
+
+      <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap', alignItems: 'center' }}>
+        <span style={{ fontSize: 12, color: theme.text.muted }}>Sort</span>
+        <select value={sort} onChange={e => setSort(e.target.value)} style={selectStyle}>
           <option value="tickets">Tickets</option>
           <option value="name">Name</option>
           <option value="services">Services</option>
         </select>
-        <input placeholder="Person suchen..." value={search} onChange={e => setSearch(e.target.value)} />
-        <span className="filter-label">{filtered.length} Personen</span>
+        <input placeholder="Person suchen..." value={search} onChange={e => setSearch(e.target.value)} style={{ ...selectStyle, width: 180 }} />
+        <span style={{ fontSize: 12, color: theme.text.muted, marginLeft: 'auto' }}>{filtered.length} Personen</span>
       </div>
-      <div className="team-grid">
-        {filtered.map(p => (
-          <div key={p.name} className={`team-card${selectedPerson === p.name ? ' selected' : ''}`}>
-            <h3>{p.name}</h3>
-            <div style={{ display: 'flex', gap: '1rem', marginBottom: '0.5rem' }}>
-              <div>
-                <span className="ticket-count" style={{ fontSize: '1.4rem' }}>{p.totalTickets.toLocaleString()}</span>
-                <span className="ticket-label"> Tickets</span>
-              </div>
-              <div>
-                <span className="ticket-count" style={{ fontSize: '1.4rem' }}>{p.services.length}</span>
-                <span className="ticket-label"> Services</span>
-              </div>
-            </div>
-            <div style={{ marginTop: '0.5rem' }}>
-              {p.services.slice(0, 8).map(s => {
-                const maxSvc = Math.max(...p.services.map(x => x.count), 1)
-                return (
-                  <div key={s.name} className="service-bar" onClick={() => onServiceClick(s.name)}>
-                    <span style={{ width: '180px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.name}</span>
-                    <div className="bar-bg">
-                      <div className="bar-fill" style={{ width: `${(s.count / maxSvc) * 100}%` }} />
-                    </div>
-                    <span style={{ minWidth: '35px', textAlign: 'right' }}>{s.count}</span>
-                  </div>
-                )
-              })}
-              {p.services.length > 8 && (
-                <div style={{ fontSize: '0.75rem', color: '#666', marginTop: '4px' }}>
-                  +{p.services.length - 8} weitere Services
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(380px, 1fr))', gap: 12 }}>
+        {filtered.map(p => {
+          const isSelected = selectedPerson === p.name
+          const maxSvc = Math.max(...p.services.map(x => x.count), 1)
+          return (
+            <div key={p.name} style={{
+              backgroundColor: theme.bg.card,
+              border: `${isSelected ? 2 : 1}px solid ${isSelected ? theme.accent : theme.border.default}`,
+              borderRadius: 8,
+              padding: 16,
+            }}>
+              <div style={{ fontSize: 14, fontWeight: 600, color: theme.text.primary, marginBottom: 8 }}>{p.name}</div>
+              <div style={{ display: 'flex', gap: 16, marginBottom: 12 }}>
+                <div>
+                  <span style={{ fontSize: 20, fontWeight: 700, color: theme.accent }}>{p.totalTickets.toLocaleString()}</span>
+                  <span style={{ fontSize: 12, color: theme.text.muted, marginLeft: 4 }}>Tickets</span>
                 </div>
-              )}
+                <div>
+                  <span style={{ fontSize: 20, fontWeight: 700, color: theme.accent }}>{p.services.length}</span>
+                  <span style={{ fontSize: 12, color: theme.text.muted, marginLeft: 4 }}>Services</span>
+                </div>
+              </div>
+              <div>
+                {p.services.slice(0, 8).map(s => (
+                  <div
+                    key={s.name}
+                    onClick={() => onServiceClick(s.name)}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4, fontSize: 12,
+                      cursor: 'pointer', color: theme.text.secondary, transition: 'color 0.15s',
+                    }}
+                    onMouseEnter={e => e.currentTarget.style.color = theme.accent}
+                    onMouseLeave={e => e.currentTarget.style.color = theme.text.secondary}
+                  >
+                    <span style={{ width: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.name}</span>
+                    <div style={{ flex: 1, height: 6, backgroundColor: theme.bg.elevated, borderRadius: 3, overflow: 'hidden' }}>
+                      <div style={{ height: 6, backgroundColor: theme.accent, borderRadius: 3, width: `${(s.count / maxSvc) * 100}%` }} />
+                    </div>
+                    <span style={{ minWidth: 35, textAlign: 'right', color: theme.text.muted }}>{s.count}</span>
+                  </div>
+                ))}
+                {p.services.length > 8 && (
+                  <div style={{ fontSize: 11, color: theme.text.muted, marginTop: 4 }}>+{p.services.length - 8} weitere</div>
+                )}
+              </div>
             </div>
-          </div>
-        ))}
+          )
+        })}
       </div>
     </div>
   )
