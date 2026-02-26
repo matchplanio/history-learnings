@@ -127,7 +127,20 @@ ALIASES = {
                                    r"The (?:Integrated )?NIC\b", r"2072 (?:Alert|Warning) Event",
                                    r"System Alert from", r"Dell PowerEdge",
                                    # Event warnings
-                                   r"Warning \| Event", r"Event occured on"],
+                                   r"Warning \| Event", r"Event occured on",
+                                   # UPS / power supply
+                                   r"\bUPS\b", r"\bUSV\b", r"battery.*(?:APC|replace|APCRBC)",
+                                   r"Power\s*Supply", r"Netzspannung", r"Stromversorgung",
+                                   # RAID / disk / drive
+                                   r"\bRAID\b.*(?:controller|rebuild|degrad|fail)",
+                                   r"(?:Festplatte|disk\s*drive|HDD|SSD).*(?:defekt|fail|replace|tausch)",
+                                   r"Patrol\s*Read", r"controller\s*slot",
+                                   # VM / vSphere
+                                   r"\bVM\b.*(?:zurücksetzen|aufsetzen|migrate|restart)",
+                                   # Dell Storage / Compellent
+                                   r"Compellent", r"Storage\s*Center\s*Alert",
+                                   # Generic hardware
+                                   r"[Kk]abel.*(?:defekt|tausch|ersetzen)"],
         "Managed Backup & DR": [r"backup", r"veeam", r"\bDR\b", r"disaster.?recovery",
                                  r"\[Success\]", r"\[Failed\]", r"\[Warning\].*(?:Backup|objects?)",
                                  r"Backup to Tape", r"Backup to Disk", r"Backup VMware",
@@ -139,7 +152,11 @@ ALIASES = {
                                  r"Laufwerkszustandsbericht",
                                  # Filesystem / storage alerts
                                  r"\bfilesystem\b", r"disk\s*space", r"storage\s*(?:alert|warning|full|low)",
-                                 r"Speicherplatz", r"Platte.*voll", r"volume.*(?:full|low|critical)"],
+                                 r"Speicherplatz", r"Platte.*voll", r"volume.*(?:full|low|critical)",
+                                 # STO status alerts
+                                 r"STO.*(?:status|mail)", r"\bSTO\b.*(?:alert|warning)",
+                                 # Storage system alerts
+                                 r"storage\s*system", r"\bNAS\b.*(?:alert|defekt|fehler)"],
         "Managed Monitoring": [r"monitoring", r"checkmk.*monitor", r"monitor.*check",
                                 r"levigo-Mon:", r"AUTO-GRAYLOG", r"Check_MK:",
                                 r"[a-z]-esx-\d+\.intern\.levigo", r"Graylog",
@@ -158,7 +175,11 @@ ALIASES = {
                                 r"PROBLEM\s+[-–]", r"RECOVERY\s+[-–]",
                                 # More alert patterns from unmatched analysis
                                 r"\balert\b.*(?:event|notification|warning|critical)",
-                                r"\bevent\b.*(?:occured|triggered|warning|error)"],
+                                r"\bevent\b.*(?:occured|triggered|warning|error)",
+                                # Location-based alerts (RZ sites)
+                                r"(?:alert|Alert).*(?:NBG|MUC|FRA|NUE)",
+                                # CMC / WWDFV monitoring
+                                r"\bCMC\b.*WWDFV", r"WWDFV"],
         "Managed MS Exchange Server": [r"exchange", r"exchange.?server",
                                         # Outlook / Mail problems → Exchange service
                                         r"\boutlook\b", r"\bpostfach\b", r"e-?mail.*(?:problem|fehler|geht nicht)",
@@ -195,11 +216,14 @@ ALIASES = {
         "Managed Endpointsecurity": [r"endpoint.*security", r"endpoint.*protection",
                                       r"Sophos.*Firewall", r"\*ALERT\*.*Sophos",
                                       r"Ninja.*Agent", r"Ninja Monitoring",
-                                      r"\bVirus\b", r"\bMalware\b", r"Trojaner"],
+                                      r"\bVirus\b", r"\bMalware\b", r"Trojaner",
+                                      # Clientsecurity events
+                                      r"clientsecurity.*event", r"ClientSecurity"],
         "Managed Linux Server": [r"linux.?server"],
         "Managed Bizzdesign Horizzon": [r"bizzdesign", r"horizzon"],
         "Managed MDM": [r"\bMDM\b", r"mobile.?device"],
-        "levigo Webhosting": [r"webhosting", r"web.?hosting"],
+        "levigo Webhosting": [r"webhosting", r"web.?hosting",
+                               r"\bNextcloud\b", r"\bhomepage\b", r"\bwebseite\b", r"\bwebsite\b"],
         "levigo/matrix Mail Server": [r"mail.?server", r"mailserver", r"matrix.*mail"],
         "managed.wireguard": [r"wireguard"],
         "Housing": [r"\bhousing\b", r"colocation", r"coloc",
@@ -226,7 +250,14 @@ ALIASES = {
                           # Generic IT support
                           r"(?:funktioniert|geht).*nicht",
                           r"nicht.*(?:erreichbar|verfügbar)",
-                          r"Telefon.*(?:problem|defekt|tausch|einrichten)"],
+                          r"Telefon.*(?:problem|defekt|tausch|einrichten)",
+                          # Telefonie / 3CX / Voicemail
+                          r"\bVoicemail\b", r"\b3CX\b", r"Telefonanlage",
+                          r"Telefonabrechnung", r"\bDurchwahl\b", r"\bNebenstelle\b",
+                          # Fahrzeit / field service
+                          r"Fahrzeit", r"\bSpringer\b",
+                          # Customer-specific generic requests (Packautomaten etc.)
+                          r"[Pp]ackautomaten"],
         "TaRZ": [r"\bTaRZ\b"],
         "S3 aaS": [r"\bS3\b.*aaS", r"object.?storage", r"\bS3\b.*(?:bucket|storage)"],
         "Kubernetes aaS on VDC (Addon zu CCP)": [r"kubernetes", r"\bk8s\b"],
@@ -250,7 +281,12 @@ ALIASES = {
         "vCIO": [r"\bvCIO\b"],
     "levigo Internet-Services": [r"VPN\b", r"Internet.*Service",
                                   r"\bDomain\b.*(?:registrier|umzug|DNS|verlänger|kündigen)",
-                                  r"\bDNS\b.*(?:eintrag|änder|zone)"],
+                                  r"\bDNS\b.*(?:eintrag|änder|zone)",
+                                  # SSL / Zertifikate
+                                  r"\bSSL\b", r"\bTLS\b", r"[Zz]ertifikat",
+                                  r"Let.?s.?Encrypt", r"\bcert\b",
+                                  # ISP / carrier
+                                  r"\b[Ee]unetworks\b", r"[Ww]artungsarbeiten.*(?:eunetworks|carrier)"],
 }
 
 def build_matchers(services):
