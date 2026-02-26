@@ -671,6 +671,112 @@ def analyze(tickets, services, sales, staff_list, units_list):
         {"artikelgruppe": "Internet", "kostengruppe": "12-HE/Monat", "umsatz": 259135, "db": 259135, "positionen": 172},
     ]
 
+    # ── Hersteller data (from PBI Kosten table, ID → Klartext mapping) ──
+    hersteller_map = {
+        805: ("levigo (intern)", 9067, "Sammelartikel, Domains, DL"),
+        100: ("IBM", 3361, "Server, Speicher, BladeCenter"),
+        743: ("Lenovo", 2061, "ThinkPad, ThinkCentre"),
+        810: ("Dell", 1895, "OptiPlex, PowerEdge, Kabel"),
+        132: ("Microsoft", 1687, "Office, Windows, Lizenzen"),
+        102: ("HP / HPE", 1515, "Server, Netzwerk, Drucker"),
+        113: ("levigo systems", 1031, "InterNet-Services, Hosting"),
+        178: ("Symantec / Norton", 862, "Norton AV, Windows OEM"),
+        897: ("Sophos", 700, "UTM, Endpoint Security, XGS"),
+        105: ("Kingston", 554, "Speicher, CompactFlash"),
+        1013: ("pulsatrix", 495, "Ladecontroller, SECC, E-Mob"),
+        122: ("Intel", 478, "CPU Pentium, Celeron, Xeon"),
+        133: ("Apple", 435, "iPad, MacBook, iPhone"),
+        164: ("OKI / Lexmark", 433, "Bildtrommel, Toner, Drucker"),
+        283: ("VMware", 384, "vSphere, GSX, ESXi"),
+        101: ("Adaptec", 383, "RAID Controller, SCSI"),
+        647: ("KVM / diverse", 334, "KVM Switch, Zubehör"),
+        147: ("Seagate", 333, "Festplatten, NAS HDD"),
+        233: ("Samsung", 317, "Monitore, SSDs"),
+        175: ("Logitech", 298, "Maus, Tastatur, Webcam"),
+        140: ("Medien / Reinigung", 293, "Bänder, Akkus, Reinigung"),
+        103: ("iiyama", 280, "Monitore, Displays, Infoscreen"),
+        107: ("ASUS", 254, "Mainboard, Grafikkarte"),
+        889: ("Veeam", 252, "Backup & Replication"),
+        141: ("Digitus", 258, "Adapter, DisplayPort, USB"),
+        254: ("Cisco", 167, "Router, Switch, SFP"),
+        146: ("YeongYang", 226, "Barebone, Wechselrahmen"),
+        218: ("Netgear", 149, "Switch, Firewall, VPN"),
+        443: ("TrendMicro", 194, "ScanMail, Security"),
+        438: ("Citrix", 198, "MetaFrame, XenApp, VDI"),
+        131: ("Check Point", 191, "Firewall-1, VPN-1"),
+        112: ("APC", 190, "USV, PDU, Stromversorgung"),
+        185: ("Veritas", 181, "Backup Exec"),
+        181: ("Rittal", 168, "Netzwerkschrank, 19-Zoll"),
+        170: ("Epson", 161, "Drucker, Tinte, WorkForce"),
+        167: ("Adobe", 155, "Acrobat, Creative Cloud"),
+        919: ("Ubiquiti", 151, "AccessPoint, UniFi, WLAN"),
+        859: ("Kaspersky", 139, "Endpoint Security, AV"),
+        200: ("Brother", 133, "Drucker, P-Touch, Scanner"),
+        134: ("BenQ", 125, "Monitor, Beamer"),
+        156: ("D-Link", 122, "Switch, HUB, Netzwerk"),
+        125: ("Gigabyte", 122, "Mainboard"),
+        108: ("ATI / AMD", 121, "Grafikkarte, Radeon"),
+        757: ("Fortinet", 117, "FortiGate, Firewall, UTM"),
+        884: ("Synology", 115, "NAS, DiskStation"),
+        881: ("baramundi", 107, "Client Management, Deploy"),
+        883: ("Cryptshare", 104, "Secure File Transfer"),
+        1001: ("Juniper", 96, "SRX, Switch, SFP"),
+        336: ("Kyocera", 94, "Drucker, Farblaser"),
+        201: ("Cherry", 81, "Tastatur, Maus"),
+        862: ("Atlassian", 81, "Jira, Confluence, Cloud"),
+        188: ("Acer", 81, "Monitor, Notebook"),
+        406: ("Western Digital", 136, "Festplatte, SSD, NAS"),
+        778: ("IGEL", 82, "ThinClient"),
+        798: ("openthinclient", 82, "ThinClient"),
+        894: ("Exclaimer", 77, "E-Mail Signatur"),
+        1022: ("ABB", 162, "Elektroinstallation"),
+        1059: ("K2 Systems", 109, "PV-Montage, Solar"),
+        1083: ("novotegra", 76, "PV-Montage, Solar"),
+        169: ("Toshiba", 85, "Notebook, HDD"),
+        165: ("Hitachi", 85, "Festplatte"),
+        184: ("Maxtor", 76, "Festplatte"),
+    }
+
+    hersteller_list = []
+    for hid, (name, count, desc) in sorted(hersteller_map.items(), key=lambda x: -x[1][1]):
+        hersteller_list.append({
+            "id": hid,
+            "name": name,
+            "artikelCount": count,
+            "description": desc,
+        })
+
+    # Categorize manufacturers
+    hersteller_categories = {
+        "Hardware": ["IBM", "Lenovo", "Dell", "HP / HPE", "Apple", "Intel", "ASUS", "Samsung",
+                     "Gigabyte", "ATI / AMD", "Acer", "BenQ", "Cherry", "iiyama", "Toshiba"],
+        "Storage": ["Seagate", "Western Digital", "Kingston", "Hitachi", "Maxtor", "Synology"],
+        "Security": ["Sophos", "Kaspersky", "Fortinet", "Check Point", "TrendMicro", "Cryptshare"],
+        "Software": ["Microsoft", "VMware", "Citrix", "Adobe", "Veritas", "Veeam",
+                      "Atlassian", "baramundi", "Exclaimer", "Symantec / Norton"],
+        "Netzwerk": ["Cisco", "D-Link", "Netgear", "Ubiquiti", "Juniper"],
+        "Drucker": ["OKI / Lexmark", "Epson", "Brother", "Kyocera"],
+        "ThinClient": ["IGEL", "openthinclient"],
+        "Infrastruktur": ["APC", "Rittal", "Adaptec", "ABB", "K2 Systems", "novotegra"],
+        "Intern": ["levigo (intern)", "levigo systems", "pulsatrix"],
+    }
+
+    # Add category to each
+    name_to_cat = {}
+    for cat, names in hersteller_categories.items():
+        for n in names:
+            name_to_cat[n] = cat
+    for h in hersteller_list:
+        h["category"] = name_to_cat.get(h["name"], "Sonstige")
+
+    # Category summary
+    cat_summary = defaultdict(lambda: {"count": 0, "artikel": 0})
+    for h in hersteller_list:
+        cat_summary[h["category"]]["count"] += 1
+        cat_summary[h["category"]]["artikel"] += h["artikelCount"]
+    hersteller_cat_list = [{"name": c, "hersteller": d["count"], "artikel": d["artikel"]}
+                           for c, d in sorted(cat_summary.items(), key=lambda x: -x[1]["artikel"])]
+
     # ── Priority analysis ──
     all_matched_tickets = []
     for tix in matched.values():
@@ -730,6 +836,8 @@ def analyze(tickets, services, sales, staff_list, units_list):
         "customerMeta": customer_meta,
         "projects": project_data,
         "revenue": revenue_data,
+        "hersteller": hersteller_list,
+        "herstellerCategories": hersteller_cat_list,
     }
 
     return output
