@@ -531,7 +531,7 @@ _CUSTOMER_PREFIX_RE = re.compile(r'^[A-Za-zÄÖÜäöüß][A-Za-z0-9äöüÄÖÜ
 _SYSTEM_SUMMARY_PREFIXES = {"levigo-Mon", "Check_MK", "AUTO-GRAYLOG",
                              "baresel", "acps", "bebion", "tcon", "qulog", "hald",
                              "pmon", "smon", "Fwd", "Re", "AW", "WG",
-                             "IBM", "http", "https"}
+                             "IBM", "http", "https", "systems"}
 _ESX_PREFIX_RE = re.compile(r'^[a-z]-esx-\d+')
 
 def match_ticket(ticket, matchers):
@@ -590,7 +590,7 @@ def match_ticket(ticket, matchers):
 SYSTEM_PREFIXES = {"levigo-Mon", "Check_MK", "AUTO-GRAYLOG",
                     "baresel", "acps", "bebion", "tcon", "qulog", "hald",
                     "pmon", "smon", "Fwd", "Re", "AW", "WG",
-                    "http", "https"}
+                    "http", "https", "systems"}
 ESX_RE = re.compile(r'^[a-z]-esx-\d+')
 
 def extract_customer(ticket):
@@ -1393,7 +1393,7 @@ def _build_cross_references(tickets, matched, matchers, customer_tickets, servic
     # 1. SERVICE CO-OCCURRENCE: Which services co-occur at the same customer?
     customer_re = re.compile(r'^([A-Za-zÄÖÜäöüß][A-Za-z0-9äöüÄÖÜß\-_\.]+?):\s')
     SYSTEM = {"levigo-Mon", "Check_MK", "AUTO-GRAYLOG", "baresel", "acps", "bebion",
-              "tcon", "qulog", "hald", "pmon", "smon", "Fwd", "Re", "AW", "WG", "IBM", "http", "https"}
+              "tcon", "qulog", "hald", "pmon", "smon", "Fwd", "Re", "AW", "WG", "IBM", "http", "https", "systems"}
 
     cust_svc_map = defaultdict(Counter)
     for t in tickets:
