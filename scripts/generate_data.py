@@ -1379,7 +1379,211 @@ def analyze(tickets, services, sales, staff_list, units_list):
         "methodology": methodology,
     }
 
+    # ── Cross-references (Querbeziehungen) ──
+    output["crossReferences"] = _build_cross_references(
+        tickets, matched, matchers, customer_tickets, service_list, all_assignees
+    )
+
     return output
+
+
+def _build_cross_references(tickets, matched, matchers, customer_tickets, service_list, all_assignees):
+    """Build logical cross-references between services, customers, and team members."""
+
+    # 1. SERVICE CO-OCCURRENCE: Which services co-occur at the same customer?
+    customer_re = re.compile(r'^([A-Za-zÄÖÜäöüß][A-Za-z0-9äöüÄÖÜß\-_\.]+?):\s')
+    SYSTEM = {"levigo-Mon", "Check_MK", "AUTO-GRAYLOG", "baresel", "acps", "bebion",
+              "tcon", "qulog", "hald", "pmon", "smon", "Fwd", "Re", "AW", "WG", "IBM", "http", "https"}
+
+    cust_svc_map = defaultdict(Counter)
+    for t in tickets:
+        svc = match_ticket(t, matchers)
+        m = customer_re.match(t.get("summary", ""))
+        if m and svc:
+            cust = m.group(1)
+            if cust not in SYSTEM and len(cust) <= 25:
+                cust_svc_map[cust][svc] += 1
+
+    # Build co-occurrence matrix (top services only for size)
+    top_svcs = [s["name"] for s in service_list if s["tickets"] > 50][:20]
+    svc_cooccurrence = defaultdict(Counter)
+    for cust, svcs in cust_svc_map.items():
+        svc_list = [s for s in svcs if s in top_svcs]
+        for i in range(len(svc_list)):
+            for j in range(i + 1, len(svc_list)):
+                a, b = sorted([svc_list[i], svc_list[j]])
+                svc_cooccurrence[a][b] += 1
+                svc_cooccurrence[b][a] += 1
+
+    # Flatten to edge list
+    cooccurrence_edges = []
+    seen = set()
+    for a, targets in svc_cooccurrence.items():
+        for b, count in targets.most_common():
+            pair = tuple(sorted([a, b]))
+            if pair not in seen and count >= 5:
+                seen.add(pair)
+                cooccurrence_edges.append({
+                    "source": pair[0],
+                    "target": pair[1],
+                    "customers": count,
+                })
+    cooccurrence_edges.sort(key=lambda x: -x["customers"])
+
+    # 2. TEAM SERVICE OVERLAP: Which team members share services?
+    svc_teams = defaultdict(set)
+    for name, data in all_assignees.items():
+        for svc_name, cnt in data["services"].items():
+            if cnt >= 5:  # minimum 5 tickets in service
+                svc_teams[svc_name].add(name)
+
+    team_overlap = []
+    svc_names_sorted = sorted(svc_teams.keys(), key=lambda x: -len(svc_teams[x]))
+    for i in range(len(svc_names_sorted)):
+        for j in range(i + 1, len(svc_names_sorted)):
+            a, b = svc_names_sorted[i], svc_names_sorted[j]
+            shared = svc_teams[a] & svc_teams[b]
+            if len(shared) >= 3:
+                team_overlap.append({
+                    "serviceA": a,
+                    "serviceB": b,
+                    "sharedMembers": len(shared),
+                    "membersA": len(svc_teams[a]),
+                    "membersB": len(svc_teams[b]),
+                    "overlapRatio": round(len(shared) / min(len(svc_teams[a]), len(svc_teams[b])), 2),
+                })
+    team_overlap.sort(key=lambda x: -x["sharedMembers"])
+    team_overlap = team_overlap[:50]
+
+    # 3. CUSTOMER SERVICE BREADTH: How many services does each customer use?
+    customer_breadth = []
+    for cust, svcs in sorted(cust_svc_map.items(), key=lambda x: -len(x[1])):
+        total_tickets = sum(svcs.values())
+        if total_tickets >= 10 and len(svcs) >= 2:
+            customer_breadth.append({
+                "customer": cust,
+                "servicesCount": len(svcs),
+                "totalTickets": total_tickets,
+                "topServices": [{"name": n, "count": c} for n, c in svcs.most_common(5)],
+                "breadthScore": round(len(svcs) / max(1, total_tickets) * 100, 1),
+            })
+    customer_breadth = customer_breadth[:60]
+
+    # 4. SERVICE TEMPORAL CORRELATION: Which services spike together?
+    svc_monthly = defaultdict(lambda: Counter())
+    for svc_name, tix in matched.items():
+        for t in tix:
+            month = t.get("created", "")[:7]
+            if month:
+                svc_monthly[svc_name][month] += 1
+
+    # Calculate correlation between top service pairs (monthly patterns)
+    all_months = sorted(set(m for mc in svc_monthly.values() for m in mc))
+    temporal_correlations = []
+    top_svc_names = [s["name"] for s in service_list if s["tickets"] > 100][:15]
+
+    for i in range(len(top_svc_names)):
+        for j in range(i + 1, len(top_svc_names)):
+            a, b = top_svc_names[i], top_svc_names[j]
+            va = [svc_monthly[a].get(m, 0) for m in all_months]
+            vb = [svc_monthly[b].get(m, 0) for m in all_months]
+            # Pearson correlation
+            n = len(all_months)
+            if n < 6:
+                continue
+            mean_a = sum(va) / n
+            mean_b = sum(vb) / n
+            cov = sum((va[k] - mean_a) * (vb[k] - mean_b) for k in range(n))
+            std_a = (sum((va[k] - mean_a) ** 2 for k in range(n))) ** 0.5
+            std_b = (sum((vb[k] - mean_b) ** 2 for k in range(n))) ** 0.5
+            if std_a > 0 and std_b > 0:
+                corr = round(cov / (std_a * std_b), 3)
+                if abs(corr) >= 0.3:
+                    temporal_correlations.append({
+                        "serviceA": a,
+                        "serviceB": b,
+                        "correlation": corr,
+                        "direction": "positive" if corr > 0 else "negative",
+                    })
+    temporal_correlations.sort(key=lambda x: -abs(x["correlation"]))
+
+    # 5. SERVICE DEPENDENCY CHAINS: Incidents in A → follow-up in B?
+    # (if customer has Incident in Service A, does Service B get more activity?)
+    dependency_hints = []
+    for cust, svcs in cust_svc_map.items():
+        if len(svcs) < 2:
+            continue
+        svc_list = svcs.most_common()
+        primary = svc_list[0][0]
+        for svc_name, cnt in svc_list[1:]:
+            if cnt >= 3:
+                dependency_hints.append((primary, svc_name))
+
+    dep_counter = Counter(dependency_hints)
+    dependency_chains = []
+    for (primary, secondary), count in dep_counter.most_common(30):
+        if count >= 5:
+            dependency_chains.append({
+                "primary": primary,
+                "secondary": secondary,
+                "customers": count,
+            })
+
+    # 6. REVENUE-SERVICE MAPPING: Match revenue Kostengruppen to Jira services
+    revenue_service_map = {
+        "managed.server": "Managed Infrastruktur",
+        "managed.backup": "Managed Backup & DR",
+        "managed.exchange": "Managed MS Exchange Server",
+        "managed.monitoring": "Managed Monitoring",
+        "managed.firewall": "Managed Firewall",
+        "managed.clientsec": "Managed Endpointsecurity",
+        "managed.antispam": "levigo AntiSpam",
+        "managed.Backup4MS365": "managed.backup für M365",
+        "managed.wifi": "Managed Networking (WLAN)",
+        "managed.archive": "levigo managed.archive",
+        "cloud.drive": "levigo cloud.drive",
+        "virtual Datacenter": "levigo vDC",
+        "MSP Verträge": "Service Desk",
+        "WebHosting": "levigo Webhosting",
+        "WebHousing": "Housing",
+        "Domain": "levigo Internet-Services",
+        "Connectivity": "levigo Internet-Services",
+        "SSL-Zertifikat": "levigo Internet-Services",
+        "CSP (MS365-Abos)": "Managed Microsoft 365",
+        "TaRZ": "TaRZ",
+    }
+
+    revenue_enriched = []
+    for svc in service_list:
+        # Find matching revenue entries
+        matched_revenue = []
+        for kg, mapped_svc in revenue_service_map.items():
+            if mapped_svc == svc["name"]:
+                matched_revenue.append(kg)
+        if matched_revenue:
+            revenue_enriched.append({
+                "service": svc["name"],
+                "tickets": svc["tickets"],
+                "revenueGroups": matched_revenue,
+            })
+
+    return {
+        "serviceCooccurrence": cooccurrence_edges[:80],
+        "teamOverlap": team_overlap,
+        "customerBreadth": customer_breadth,
+        "temporalCorrelations": temporal_correlations[:40],
+        "dependencyChains": dependency_chains,
+        "revenueServiceMap": revenue_service_map,
+        "revenueEnriched": revenue_enriched,
+        "stats": {
+            "cooccurrenceEdges": len(cooccurrence_edges),
+            "teamOverlapPairs": len(team_overlap),
+            "customersAnalyzed": len(cust_svc_map),
+            "temporalCorrelations": len(temporal_correlations),
+            "dependencyChains": len(dependency_chains),
+            "revenueLinked": len(revenue_enriched),
+        },
+    }
 
 def main():
     print("Loading data sources...")

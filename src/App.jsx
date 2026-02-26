@@ -11,16 +11,18 @@ import { CustomerView } from './views/CustomerView'
 import { ProjectView } from './views/ProjectView'
 import { MethodikView } from './views/MethodikView'
 import { ERP2025View } from './views/ERP2025View'
+import { CrossReferencesView } from './views/CrossReferencesView'
 
 const navItems = [
   { id: 'services', label: 'Services', icon: '◆' },
+  { id: 'cross-refs', label: 'Querbeziehungen', icon: '◈' },
   { id: 'team', label: 'Team', icon: '◇' },
   { id: 'trends', label: 'Trends', icon: '▤' },
-  { id: 'categories', label: 'Kategorien', icon: '◈' },
+  { id: 'categories', label: 'Kategorien', icon: '⊞' },
   { id: 'customers', label: 'Kunden', icon: '◎' },
   { id: 'projects', label: 'Projekte', icon: '◫' },
   { id: 'erp-2025', label: 'ERP 2025', icon: '⊕' },
-  { id: 'units', label: 'Units', icon: '⊞' },
+  { id: 'units', label: 'Units', icon: '⊡' },
   { id: 'unmatched', label: 'Unmatched', icon: '⊘' },
   { id: 'methodik', label: 'Methodik', icon: '⚙' },
 ]
@@ -193,6 +195,7 @@ function App() {
         {currentView === 'team' && (
           <TeamView data={data} selectedPerson={selectedPerson} onServiceClick={openService} />
         )}
+        {currentView === 'cross-refs' && <CrossReferencesView data={data} onServiceClick={openService} />}
         {currentView === 'trends' && <TrendView data={data} />}
         {currentView === 'categories' && <CategoryView data={data} onServiceClick={openService} />}
         {currentView === 'customers' && <CustomerView data={data} onServiceClick={openService} />}
