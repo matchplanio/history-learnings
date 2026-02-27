@@ -8,6 +8,18 @@ const sectionStyle = {
 
 const colors = ['#22d3ee', '#34d399', '#fbbf24', '#f87171', '#60a5fa', '#c084fc', '#fb923c', '#2dd4bf', '#f472b6', '#8b949e']
 
+const PHASE_COLORS = {
+  'Leadphase': { bg: '#21262d', text: '#8b949e', border: '#30363d' },
+  'Angebot':   { bg: '#2d2518', text: '#fbbf24', border: '#92400e' },
+  'Abschluss': { bg: '#1a2e2a', text: '#34d399', border: '#064e3b' },
+}
+
+const STATUS_COLORS = {
+  'Offen':         { bg: '#1a2040', text: '#60a5fa', border: '#1e3a5f' },
+  'Abgeschlossen': { bg: '#1a2e2a', text: '#34d399', border: '#064e3b' },
+  'Ausgeschieden': { bg: '#2a1a1a', text: '#f87171', border: '#7f1d1d' },
+}
+
 const LEVEL_COLORS = {
   'Basic':        { bg: '#21262d', text: '#8b949e', border: '#30363d' },
   'Prime':        { bg: '#2d2518', text: '#fbbf24', border: '#92400e' },
@@ -46,6 +58,7 @@ export function CustomerView({ data, onServiceClick }) {
       if (sortBy === 'incidentRate') return b.incidentRate - a.incidentRate
       if (sortBy === 'services') return b.servicesCount - a.servicesCount
       if (sortBy === 'mrr') return (b.codaContract?.totalMonthly || 0) - (a.codaContract?.totalMonthly || 0)
+      if (sortBy === 'pipeline') return (b.codaDeals?.reduce((s, d) => s + (d.estimatedValue || 0), 0) || 0) - (a.codaDeals?.reduce((s, d) => s + (d.estimatedValue || 0), 0) || 0)
       return b.tickets - a.tickets
     }),
   [customers, sortBy, filterMinTickets])
@@ -82,14 +95,27 @@ export function CustomerView({ data, onServiceClick }) {
       </div>
 
       {/* KPI cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 12, marginBottom: 16 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 12 }}>
         {[
           { label: 'Kunden', value: meta.totalCustomers, color: theme.accent },
           { label: 'Kunden-Tickets', value: meta.totalCustomerTickets?.toLocaleString(), color: '#34d399' },
-          { label: 'Ø Tickets/Kunde', value: meta.totalCustomers ? Math.round(meta.totalCustomerTickets / meta.totalCustomers) : 0, color: '#fbbf24' },
           { label: 'Aktive Verträge', value: meta.codaActiveContracts || 0, color: '#a78bfa' },
           { label: 'Gesamt MRR', value: formatEur(meta.codaTotalMRR), color: '#60a5fa' },
+        ].map(kpi => (
+          <div key={kpi.label} style={sectionStyle}>
+            <div style={{ fontSize: 11, color: theme.text.muted, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 6 }}>{kpi.label}</div>
+            <div style={{ fontSize: 22, fontWeight: 700, color: kpi.color }}>{kpi.value}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Pipeline KPIs */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 16 }}>
+        {[
           { label: 'Gesamt ARR', value: formatEur(meta.codaTotalARR), color: '#2dd4bf' },
+          { label: 'Offene Deals', value: meta.codaOpenDeals || 0, color: '#fbbf24' },
+          { label: 'Pipeline (brutto)', value: formatEur(meta.codaPipelineValue), color: '#fb923c' },
+          { label: 'Pipeline (gewichtet)', value: formatEur(meta.codaWeightedPipeline), color: '#f472b6' },
         ].map(kpi => (
           <div key={kpi.label} style={sectionStyle}>
             <div style={{ fontSize: 11, color: theme.text.muted, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 6 }}>{kpi.label}</div>
@@ -137,6 +163,7 @@ export function CustomerView({ data, onServiceClick }) {
           { id: 'incidentRate', label: 'Incident-Rate' },
           { id: 'services', label: 'Services' },
           { id: 'mrr', label: 'MRR' },
+          { id: 'pipeline', label: 'Pipeline' },
         ].map(s => (
           <button key={s.id} onClick={() => setSortBy(s.id)} style={{
             padding: '4px 12px', borderRadius: 6, fontSize: 12, cursor: 'pointer',
@@ -168,7 +195,7 @@ export function CustomerView({ data, onServiceClick }) {
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
           <thead>
             <tr>
-              {['Kunde', 'Vertrag', 'MRR', 'Tickets', 'Incidents', 'Rate', 'Services', 'Match%', 'Aktiv seit'].map(h => (
+              {['Kunde', 'Vertrag', 'MRR', 'Deals', 'Tickets', 'Incidents', 'Rate', 'Services', 'Match%', 'Aktiv seit'].map(h => (
                 <th key={h} style={{ textAlign: 'left', padding: '8px 10px', borderBottom: `1px solid ${theme.border.default}`, color: theme.text.muted, fontWeight: 600, fontSize: 12 }}>{h}</th>
               ))}
             </tr>
@@ -193,6 +220,13 @@ export function CustomerView({ data, onServiceClick }) {
                   </td>
                   <td style={{ padding: '6px 10px', borderBottom: `1px solid ${theme.border.subtle}`, color: cc ? '#60a5fa' : theme.text.muted, fontVariantNumeric: 'tabular-nums' }}>
                     {cc ? formatEur(cc.totalMonthly) : '—'}
+                  </td>
+                  <td style={{ padding: '6px 10px', borderBottom: `1px solid ${theme.border.subtle}` }}>
+                    {c.codaDeals?.length > 0 ? (
+                      <span style={{ fontSize: 11, padding: '1px 6px', borderRadius: 4, backgroundColor: '#2d2518', color: '#fbbf24', border: '1px solid #92400e' }}>
+                        {c.codaDeals.length} Deal{c.codaDeals.length > 1 ? 's' : ''}
+                      </span>
+                    ) : <span style={{ color: theme.text.muted, fontSize: 11 }}>—</span>}
                   </td>
                   <td style={{ padding: '6px 10px', borderBottom: `1px solid ${theme.border.subtle}`, color: theme.text.primary, fontWeight: 600 }}>{c.tickets.toLocaleString()}</td>
                   <td style={{ padding: '6px 10px', borderBottom: `1px solid ${theme.border.subtle}`, color: theme.semantic.error }}>{c.incidents.toLocaleString()}</td>
@@ -321,6 +355,46 @@ export function CustomerView({ data, onServiceClick }) {
               </div>
             )
           })()}
+
+          {/* Coda Deals */}
+          {detail.codaDeals?.length > 0 && (
+            <div style={{ marginTop: 16, padding: '14px 16px', backgroundColor: '#2d2518', border: '1px solid #92400e', borderRadius: 8 }}>
+              <div style={{ fontSize: 11, fontWeight: 600, color: '#fbbf24', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 12 }}>
+                ◈ Deals ({detail.codaDeals.length})
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {detail.codaDeals.map(deal => {
+                  const phaseCol = PHASE_COLORS[deal.phase] || PHASE_COLORS['Leadphase']
+                  const statusCol = STATUS_COLORS[deal.status] || STATUS_COLORS['Offen']
+                  return (
+                    <div key={deal.dealId} style={{ padding: '10px 12px', backgroundColor: '#1a1209', borderRadius: 6, border: '1px solid #4a3010' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6, flexWrap: 'wrap' }}>
+                        <span style={{ fontSize: 13, fontWeight: 600, color: '#fde68a' }}>{deal.title}</span>
+                        <span style={{ fontSize: 10, padding: '1px 6px', borderRadius: 4, backgroundColor: phaseCol.bg, color: phaseCol.text, border: `1px solid ${phaseCol.border}` }}>{deal.phase}</span>
+                        <span style={{ fontSize: 10, padding: '1px 6px', borderRadius: 4, backgroundColor: statusCol.bg, color: statusCol.text, border: `1px solid ${statusCol.border}` }}>{deal.status}</span>
+                        {deal.assignee && <span style={{ fontSize: 11, color: '#d97706', marginLeft: 'auto' }}>@ {deal.assignee}</span>}
+                      </div>
+                      <div style={{ display: 'flex', gap: 20, fontSize: 12, flexWrap: 'wrap' }}>
+                        {deal.estimatedValue != null && (
+                          <span style={{ color: '#fbbf24' }}>Volumen: <strong>{formatEur(deal.estimatedValue)}</strong></span>
+                        )}
+                        {deal.monthlyRevenue != null && deal.monthlyRevenue > 0 && (
+                          <span style={{ color: '#fb923c' }}>MRR: {formatEur(deal.monthlyRevenue)}</span>
+                        )}
+                        {deal.chance != null && (
+                          <span style={{ color: '#f59e0b' }}>Chance: {deal.chance}%</span>
+                        )}
+                        {deal.durationMonths && (
+                          <span style={{ color: '#92400e' }}>{deal.durationMonths} Monate</span>
+                        )}
+                        {deal.dealType && <span style={{ color: '#78350f' }}>{deal.dealType}</span>}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )}
 
           {/* Services + Assignees */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginTop: 16 }}>

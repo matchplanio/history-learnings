@@ -496,18 +496,25 @@ def fetch_deals():
     result = []
     for row in items:
         v = row["values"]
+        chance_raw = v.get("c-bC8OmBv7EL")
+        chance_val = None
+        if chance_raw:
+            try:
+                chance_val = float(str(chance_raw).replace('\xa0', '').replace('%', '').replace(',', '.').strip())
+            except (ValueError, TypeError):
+                pass
         result.append({
             "id": row.get("id", ""),
             "dealId": str(v.get("c-MUASUUPXbB") or "").strip(),
             "title": (v.get("c-uwwcwqj7HD") or "").strip(),
             "org": (v.get("c-J627MtlOOy") or "").strip(),
-            "estimatedValue": (v.get("c-65TQu6bqNJ") or "").strip(),
+            "estimatedValue": _parse_eur(v.get("c-65TQu6bqNJ")),
             "monthlyRevenue": _parse_eur(v.get("c-25wz9ma18P")),
             "phase": (v.get("c-kGEiJQ5onh") or "").strip(),
             "dealType": (v.get("c-y7AARyh_ji") or "").strip(),
             "status": (v.get("c-ydHEgUYDXU") or "").strip(),
             "durationMonths": v.get("c-ugioMvlAlO"),
-            "chance": v.get("c-bC8OmBv7EL"),
+            "chance": chance_val,
             "assignee": (v.get("c-YdH-O2mJgi") or "").strip(),
             "firstContact": _date(v.get("c-pOQXZB4vAE")),
         })
@@ -1851,6 +1858,28 @@ def analyze(tickets, services, sales, staff_list, units_list, kf_list, roles_lis
                 "techContact": tech_contact,
             }
 
+    # ── Coda deal enrichment ──
+    deals_list = (coda_data or {}).get("deals", [])
+    deal_lookup: dict[str, list] = defaultdict(list)
+    for deal in deals_list:
+        key = _norm_org(deal.get("org", ""))
+        if key:
+            deal_lookup[key].append(deal)
+
+    def _find_deals(jira_name: str):
+        norm_jira = _norm_org(jira_name)
+        if norm_jira in deal_lookup:
+            return deal_lookup[norm_jira]
+        for deal_norm, deals in deal_lookup.items():
+            if norm_jira.startswith(deal_norm) or deal_norm.startswith(norm_jira):
+                return deals
+        return None
+
+    for c in customer_list:
+        matched_deals = _find_deals(c["name"])
+        if matched_deals:
+            c["codaDeals"] = matched_deals
+
     # Build codaContracts summary (all active, sorted by monthly value desc)
     sorted_contracts = sorted(
         contracts_list or [],
@@ -1859,6 +1888,10 @@ def analyze(tickets, services, sales, staff_list, units_list, kf_list, roles_lis
     total_mrr = sum(c["monthlyValue"] or 0 for c in sorted_contracts)
     total_arr = sum(c["annualValue"] or 0 for c in sorted_contracts)
 
+    open_deals = [d for d in deals_list if d.get("status") == "Offen"]
+    pipeline_value = sum(d.get("estimatedValue") or 0 for d in open_deals)
+    weighted_pipeline = sum((d.get("estimatedValue") or 0) * (d.get("chance") or 0) / 100 for d in open_deals)
+
     customer_meta = {
         "totalCustomers": len(customer_tickets),
         "customersWithTickets": len([c for c in customer_list if c["tickets"] >= 3]),
@@ -1866,6 +1899,9 @@ def analyze(tickets, services, sales, staff_list, units_list, kf_list, roles_lis
         "codaActiveContracts": len(sorted_contracts),
         "codaTotalMRR": round(total_mrr, 2),
         "codaTotalARR": round(total_arr, 2),
+        "codaOpenDeals": len(open_deals),
+        "codaPipelineValue": round(pipeline_value, 2),
+        "codaWeightedPipeline": round(weighted_pipeline, 2),
     }
 
     # ── Project analysis (SXPP) ──
