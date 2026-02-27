@@ -106,7 +106,7 @@ function TableHeader({ cols }) {
 }
 
 // ── Section 1: High-activity customers without a contract ──
-function NoContractSection({ items, onCustomerClick }) {
+function NoContractSection({ items }) {
   const [search, setSearch] = useState('')
   const filtered = useMemo(() =>
     items.filter(c => !search || c.name.toLowerCase().includes(search.toLowerCase()))
