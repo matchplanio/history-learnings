@@ -2379,6 +2379,95 @@ def analyze(tickets, services, sales, staff_list, units_list, kf_list, roles_lis
         "methodology": methodology,
     }
 
+    # ── Insights: cross-source gaps & contradictions ──
+    # Build reverse lookup: contract org → customer
+    def _find_customer_for_org(org_name):
+        norm_o = _norm_org(org_name)
+        for c in customer_list:
+            norm_c = _norm_org(c["name"])
+            if norm_o == norm_c or norm_o.startswith(norm_c) or norm_c.startswith(norm_o):
+                return c
+        return None
+
+    # Gap 1: High-activity customers without a contract
+    no_contract_active = [
+        {"name": c["name"], "tickets": c["tickets"], "incidents": c["incidents"],
+         "incidentRate": c["incidentRate"], "activeSince": c["activeSince"],
+         "topServices": c["services"][:3]}
+        for c in customer_list
+        if c["tickets"] >= 20 and not c.get("codaContract")
+    ]
+    no_contract_active.sort(key=lambda x: -x["tickets"])
+
+    # Gap 2: Active contracts with no/minimal Jira visibility
+    contract_no_jira = []
+    for con in sorted_contracts:
+        cust = _find_customer_for_org(con["org"])
+        jira_tickets = cust["tickets"] if cust else 0
+        if jira_tickets < 5:
+            contract_no_jira.append({
+                "org": con["org"], "level": con["level"],
+                "monthlyValue": con["monthlyValue"], "annualValue": con["annualValue"],
+                "avgUsage": con["avgUsage"], "parts": con["parts"],
+                "jiraTickets": jira_tickets,
+                "jiraCustomer": cust["name"] if cust else None,
+            })
+    contract_no_jira.sort(key=lambda x: -(x["monthlyValue"] or 0))
+
+    # Gap 3: Over-usage (avgUsage > 100%)
+    over_usage = [
+        {"org": con["org"], "level": con["level"], "avgUsage": con["avgUsage"],
+         "monthlyValue": con["monthlyValue"], "parts": con["parts"],
+         "jiraTickets": (_find_customer_for_org(con["org"]) or {}).get("tickets", 0)}
+        for con in sorted_contracts
+        if con.get("avgUsage") and con["avgUsage"] > 100
+    ]
+    over_usage.sort(key=lambda x: -x["avgUsage"])
+
+    # Gap 4: High incident rate without contract
+    high_risk_no_contract = [
+        {"name": c["name"], "tickets": c["tickets"], "incidents": c["incidents"],
+         "incidentRate": c["incidentRate"], "activeSince": c["activeSince"],
+         "topServices": c["services"][:3]}
+        for c in customer_list
+        if c["incidentRate"] > 40 and c["tickets"] >= 10 and not c.get("codaContract")
+    ]
+    high_risk_no_contract.sort(key=lambda x: -x["incidentRate"])
+
+    # Gap 5: Coda internal people vs Jira assignee coverage
+    jira_assignee_norms = set()
+    for s in service_list:
+        for a in s.get("topAssignees", []):
+            jira_assignee_norms.add(_norm_org(a["name"]))
+    for tp_name in (team_profiles if isinstance(team_profiles, list) else team_profiles.keys()):
+        jira_assignee_norms.add(_norm_org(tp_name if isinstance(tp_name, str) else tp_name.get("name", "")))
+
+    coda_not_in_jira = []
+    for p in (coda_data or {}).get("people", []):
+        if p.get("type") == "intern" and not p.get("archived"):
+            norm_p = _norm_org(p["name"])
+            in_jira = any(
+                norm_p == n or norm_p in n or n in norm_p
+                for n in jira_assignee_norms
+            )
+            if not in_jira:
+                coda_not_in_jira.append({"name": p["name"], "team": p.get("team", ""), "email": p.get("email", "")})
+
+    output["insights"] = {
+        "noContractHighActivity": no_contract_active,
+        "contractNoJira": contract_no_jira,
+        "overUsage": over_usage,
+        "highRiskNoContract": high_risk_no_contract,
+        "codaStaffNotInJira": coda_not_in_jira,
+        "stats": {
+            "noContractHighActivity": len(no_contract_active),
+            "contractNoJira": len(contract_no_jira),
+            "overUsage": len(over_usage),
+            "highRiskNoContract": len(high_risk_no_contract),
+            "codaStaffNotInJira": len(coda_not_in_jira),
+        }
+    }
+
     # ── Coda Contracts ──
     output["codaContracts"] = sorted_contracts
 

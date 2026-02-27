@@ -14,9 +14,11 @@ import { ERP2025View } from './views/ERP2025View'
 import { CrossReferencesView } from './views/CrossReferencesView'
 import { HistoricRolesView } from './views/HistoricRolesView'
 import { CodaView } from './views/CodaView'
+import { InsightsView } from './views/InsightsView'
 
 const navItems = [
   { id: 'services', label: 'Services', icon: '◆' },
+  { id: 'insights', label: 'Insights', icon: '⚡' },
   { id: 'cross-refs', label: 'Querbeziehungen', icon: '◈' },
   { id: 'team', label: 'Team', icon: '◇' },
   { id: 'trends', label: 'Trends', icon: '▤' },
@@ -195,13 +197,14 @@ function App() {
         {currentView === 'team' && (
           <TeamView data={data} selectedPerson={selectedPerson} onServiceClick={openService} />
         )}
+        {currentView === 'insights' && <InsightsView data={data} />}
         {currentView === 'cross-refs' && <CrossReferencesView data={data} onServiceClick={openService} />}
         {currentView === 'trends' && <TrendView data={data} />}
         {currentView === 'categories' && <CategoryView data={data} onServiceClick={openService} />}
         {currentView === 'customers' && <CustomerView data={data} onServiceClick={openService} />}
-        {currentView === 'projects' && <ProjectView data={data} onServiceClick={openService} />}
+        {currentView === 'projects' && <ProjectView data={data} />}
         {currentView === 'units' && <UnitView data={data} onServiceClick={openService} />}
-        {currentView === 'erp-2025' && profiles && <ERP2025View data={data} profiles={profiles} onServiceClick={openService} />}
+        {currentView === 'erp-2025' && profiles && <ERP2025View profiles={profiles} onServiceClick={openService} />}
         {currentView === 'historic-roles' && <HistoricRolesView data={data} onPersonClick={openPerson} />}
         {currentView === 'coda' && <CodaView data={data} />}
         {currentView === 'unmatched' && <UnmatchedView data={data} />}
