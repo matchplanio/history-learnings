@@ -13,6 +13,7 @@ import { MethodikView } from './views/MethodikView'
 import { ERP2025View } from './views/ERP2025View'
 import { CrossReferencesView } from './views/CrossReferencesView'
 import { HistoricRolesView } from './views/HistoricRolesView'
+import { CodaView } from './views/CodaView'
 
 const navItems = [
   { id: 'services', label: 'Services', icon: '◆' },
@@ -25,6 +26,7 @@ const navItems = [
   { id: 'erp-2025', label: 'ERP 2025', icon: '⊕' },
   { id: 'units', label: 'Units', icon: '⊡' },
   { id: 'historic-roles', label: 'Historic Roles', icon: '◉' },
+  { id: 'coda', label: 'Coda HQ', icon: '◈' },
   { id: 'unmatched', label: 'Unmatched', icon: '⊘' },
   { id: 'methodik', label: 'Methodik', icon: '⚙' },
 ]
@@ -205,6 +207,7 @@ function App() {
         {currentView === 'units' && <UnitView data={data} onServiceClick={openService} />}
         {currentView === 'erp-2025' && profiles && <ERP2025View data={data} profiles={profiles} onServiceClick={openService} />}
         {currentView === 'historic-roles' && <HistoricRolesView data={data} onPersonClick={openPerson} />}
+        {currentView === 'coda' && <CodaView data={data} />}
         {currentView === 'unmatched' && <UnmatchedView data={data} />}
         {currentView === 'methodik' && <MethodikView data={data} />}
       </main>

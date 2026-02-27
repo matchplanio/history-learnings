@@ -303,6 +303,234 @@ def fetch_contracts():
     return contracts
 
 
+def _split(raw, sep=","):
+    """Split a comma-separated string, stripping whitespace."""
+    if not raw:
+        return []
+    return [p.strip() for p in str(raw).split(sep) if p.strip()]
+
+
+def _date(raw):
+    """Extract YYYY-MM-DD from ISO datetime string."""
+    return str(raw)[:10] if raw else ""
+
+
+def fetch_projects():
+    """Fetch Coda db_Projects."""
+    try:
+        items = _coda_fetch_all("grid-HodIxWdfXT")
+    except Exception as e:
+        print(f"  Warning: fetch_projects failed: {e}")
+        return []
+    result = []
+    for row in items:
+        v = row["values"]
+        if v.get("c-CTJ2eDpHAw", False):  # Archived
+            continue
+        result.append({
+            "id": row.get("id", ""),
+            "title": (v.get("c-WpKg032DXl") or "").strip(),
+            "description": (v.get("c-T7at2wQrin") or "").strip()[:300],
+            "lead": (v.get("c-1h2m7D9qzU") or "").strip(),
+            "team": _split(v.get("c--WQrM2GAkn")),
+            "status": (v.get("c-trUOr0DCcy") or "").strip(),
+            "space": (v.get("c-67OfvX3uMx") or "").strip(),
+            "org": (v.get("c-rgNDeiFgPp") or "").strip(),
+            "progress": v.get("c-0kcBvzXixN"),
+            "phase": (v.get("c-CVtynRb9c5") or "").strip(),
+            "projectId": (v.get("c-Y7X3_1ar1L") or "").strip(),
+            "startDate": _date(v.get("c-ZDQpW25nf0")),
+            "endDate": _date(v.get("c-c8S2IrEBz0")),
+            "type": (v.get("c-Ou9oVnz2X0") or "").strip(),
+        })
+    return result
+
+
+def fetch_tasks():
+    """Fetch Coda db_Tasks (non-deleted)."""
+    try:
+        items = _coda_fetch_all("grid-8jIH1k4XCY")
+    except Exception as e:
+        print(f"  Warning: fetch_tasks failed: {e}")
+        return []
+    result = []
+    for row in items:
+        v = row["values"]
+        if v.get("c-15i1AAaEh-", False):  # is deleted
+            continue
+        result.append({
+            "id": row.get("id", ""),
+            "taskNumber": (v.get("c-nRxtugDaDR") or "").strip(),
+            "task": (v.get("c-oogopc7d7s") or "").strip()[:200],
+            "assignee": (v.get("c-oBEBLJRWSe") or "").strip(),
+            "dueDate": _date(v.get("c-oavBYS3uVU")),
+            "doDate": _date(v.get("c-14OZMKjOq5")),
+            "project": (v.get("c-eruAinq5QN") or "").strip(),
+            "projectId": (v.get("c-GP8zEAjmQo") or "").strip(),
+            "space": (v.get("c-YtN4a46aJm") or "").strip(),
+            "status": (v.get("c-6SwM8JV-xJ") or "").strip(),
+            "type": (v.get("c-hYsU8oWDsB") or "").strip(),
+            "org": (v.get("c-4AyRXDjf-C") or "").strip(),
+            "inProgress": bool(v.get("c-Lq_IPzQZhD", False)),
+            "isDone": bool(v.get("c-12eXwcJ_i5", False)),
+            "salesContact": (v.get("c-oS4IKCJuhx") or "").strip(),
+            "techContact": (v.get("c-9bppOcgQVd") or "").strip(),
+        })
+    return result
+
+
+def fetch_people():
+    """Fetch Coda db_People (non-archived)."""
+    try:
+        items = _coda_fetch_all("grid-C22FG7clXy")
+    except Exception as e:
+        print(f"  Warning: fetch_people failed: {e}")
+        return []
+    result = []
+    for row in items:
+        v = row["values"]
+        if v.get("c-N4ko5DFCBs", False):  # Archived
+            continue
+        result.append({
+            "name": (v.get("c-WpKg032DXl") or "").strip(),
+            "firstname": (v.get("c-T7at2wQrin") or "").strip(),
+            "lastname": (v.get("c-1h2m7D9qzU") or "").strip(),
+            "org": (v.get("c-YCezy9S-qh") or "").strip(),
+            "email": (v.get("c-PN8GvbvSwU") or "").strip(),
+            "type": (v.get("c-0j1qERcgmy") or "").strip(),
+            "team": (v.get("c-CUj5RFlIg1") or "").strip(),
+        })
+    return result
+
+
+def fetch_meetings():
+    """Fetch Coda db_Meetings&Events."""
+    try:
+        items = _coda_fetch_all("grid-8gjU0zgevl")
+    except Exception as e:
+        print(f"  Warning: fetch_meetings failed: {e}")
+        return []
+    result = []
+    for row in items:
+        v = row["values"]
+        attendees_raw = v.get("c-1h2m7D9qzU") or ""
+        result.append({
+            "id": row.get("id", ""),
+            "title": (v.get("c-WpKg032DXl") or "").strip(),
+            "startDate": _date(v.get("c-T7at2wQrin")),
+            "endDate": _date(v.get("c--oqzada6mi")),
+            "attendees": _split(attendees_raw),
+            "space": (v.get("c-S3yeB9og5_") or "").strip(),
+            "org": (v.get("c-a79cI5NbPb") or "").strip(),
+            "project": (v.get("c-qYu2L7wC-D") or "").strip(),
+            "type": (v.get("c-ERFL5kgcx3") or "").strip(),
+            "location": (v.get("c-7xNGVC5YD5") or "").strip(),
+        })
+    return result
+
+
+def fetch_ressources():
+    """Fetch Coda db_Ressources (non-archived)."""
+    try:
+        items = _coda_fetch_all("grid-yIMb_JBnKL")
+    except Exception as e:
+        print(f"  Warning: fetch_ressources failed: {e}")
+        return []
+    result = []
+    for row in items:
+        v = row["values"]
+        if v.get("c-RlrtovbIdh", False):  # Archived
+            continue
+        result.append({
+            "name": (v.get("c-WpKg032DXl") or "").strip(),
+            "type": (v.get("c-T7at2wQrin") or "").strip(),
+            "space": (v.get("c-XgxIXrbJxU") or "").strip(),
+            "org": (v.get("c-l1PGlDp4bp") or "").strip(),
+            "project": (v.get("c-OB3kucr_Te") or "").strip(),
+            "owner": (v.get("c-co0e9wzp8A") or "").strip(),
+            "status": (v.get("c-KVupL7LhYo") or "").strip(),
+            "date": _date(v.get("c-C0zleQ-73K")),
+        })
+    return result
+
+
+def fetch_objectives():
+    """Fetch Coda db_Objectives and db_Key_Results combined."""
+    try:
+        obj_items = _coda_fetch_all("grid-h1F3M3aWDK")
+        kr_items = _coda_fetch_all("grid-Bo29mzLZUF")
+    except Exception as e:
+        print(f"  Warning: fetch_objectives failed: {e}")
+        return [], []
+    objectives = []
+    for row in obj_items:
+        v = row["values"]
+        objectives.append({
+            "objective": (v.get("c-WpKg032DXl") or "").strip(),
+            "description": (v.get("c-T7at2wQrin") or "").strip(),
+            "quarter": (v.get("c-1h2m7D9qzU") or "").strip(),
+            "keyResults": _split(v.get("c-2ObrOjz06b")),
+            "achievement": v.get("c-E9efwdrb2F"),
+        })
+    key_results = []
+    for row in kr_items:
+        v = row["values"]
+        key_results.append({
+            "keyResult": (v.get("c-WpKg032DXl") or "").strip(),
+            "description": (v.get("c-T7at2wQrin") or "").strip(),
+            "current": v.get("c-1h2m7D9qzU"),
+            "target": v.get("c-MkvKC-nf6I"),
+            "objective": (v.get("c-k4oWdlWs6N") or "").strip(),
+            "progressPct": v.get("c-8nfBOg42Tm"),
+        })
+    return objectives, key_results
+
+
+def fetch_deals():
+    """Fetch Coda db_Deals."""
+    try:
+        items = _coda_fetch_all("grid-KIF2S6vtGp")
+    except Exception as e:
+        print(f"  Warning: fetch_deals failed: {e}")
+        return []
+    result = []
+    for row in items:
+        v = row["values"]
+        result.append({
+            "id": row.get("id", ""),
+            "dealId": str(v.get("c-MUASUUPXbB") or "").strip(),
+            "title": (v.get("c-uwwcwqj7HD") or "").strip(),
+            "org": (v.get("c-J627MtlOOy") or "").strip(),
+            "estimatedValue": (v.get("c-65TQu6bqNJ") or "").strip(),
+            "monthlyRevenue": _parse_eur(v.get("c-25wz9ma18P")),
+            "phase": (v.get("c-kGEiJQ5onh") or "").strip(),
+            "dealType": (v.get("c-y7AARyh_ji") or "").strip(),
+            "status": (v.get("c-ydHEgUYDXU") or "").strip(),
+            "durationMonths": v.get("c-ugioMvlAlO"),
+            "chance": v.get("c-bC8OmBv7EL"),
+            "assignee": (v.get("c-YdH-O2mJgi") or "").strip(),
+            "firstContact": _date(v.get("c-pOQXZB4vAE")),
+        })
+    return result
+
+
+def fetch_teams():
+    """Fetch Coda db_InternalTeams."""
+    try:
+        items = _coda_fetch_all("grid-daHpz4zhc0")
+    except Exception as e:
+        print(f"  Warning: fetch_teams failed: {e}")
+        return []
+    result = []
+    for row in items:
+        v = row["values"]
+        result.append({
+            "team": (v.get("c-45aITqC8T4") or "").strip(),
+            "members": _split(v.get("c--Qm-i-QMVn")),
+        })
+    return result
+
+
 def analyze_historic_roles(tickets, roles_list, matchers, spaces_list=None):
     """For each Coda role, find who historically performed it based on Jira ticket patterns."""
 
@@ -1198,7 +1426,7 @@ def extract_customer(ticket):
 
 # ── Analysis ──
 
-def analyze(tickets, services, sales, staff_list, units_list, kf_list, roles_list=None, spaces_list=None, contracts_list=None):
+def analyze(tickets, services, sales, staff_list, units_list, kf_list, roles_list=None, spaces_list=None, contracts_list=None, coda_data=None):
     matchers = build_matchers(services)
     unit_kw_map = build_unit_keyword_map(units_list, kf_list)
 
@@ -2118,6 +2346,18 @@ def analyze(tickets, services, sales, staff_list, units_list, kf_list, roles_lis
     # ── Coda Contracts ──
     output["codaContracts"] = sorted_contracts
 
+    # ── All other Coda tables ──
+    if coda_data:
+        output["codaProjects"] = coda_data.get("projects", [])
+        output["codaTasks"] = coda_data.get("tasks", [])
+        output["codaPeople"] = coda_data.get("people", [])
+        output["codaMeetings"] = coda_data.get("meetings", [])
+        output["codaRessources"] = coda_data.get("ressources", [])
+        output["codaObjectives"] = coda_data.get("objectives", [])
+        output["codaKeyResults"] = coda_data.get("key_results", [])
+        output["codaDeals"] = coda_data.get("deals", [])
+        output["codaTeams"] = coda_data.get("teams", [])
+
     # ── Cross-references (Querbeziehungen) ──
     output["crossReferences"] = _build_cross_references(
         tickets, matched, matchers, customer_tickets, service_list, all_assignees
@@ -2359,8 +2599,38 @@ def main():
     total_mrr = sum(c["monthlyValue"] or 0 for c in contracts_list)
     print(f"  Contracts: {len(contracts_list)} active contracts (MRR: €{total_mrr:,.0f}, Coda API)")
 
+    # Fetch remaining Coda tables
+    projects = fetch_projects()
+    print(f"  Projects: {len(projects)} (Coda API)")
+    tasks = fetch_tasks()
+    print(f"  Tasks: {len(tasks)} (Coda API)")
+    people = fetch_people()
+    print(f"  People: {len(people)} (Coda API)")
+    meetings = fetch_meetings()
+    print(f"  Meetings: {len(meetings)} (Coda API)")
+    ressources = fetch_ressources()
+    print(f"  Ressources: {len(ressources)} (Coda API)")
+    objectives, key_results = fetch_objectives()
+    print(f"  OKRs: {len(objectives)} objectives, {len(key_results)} key results (Coda API)")
+    deals = fetch_deals()
+    print(f"  Deals: {len(deals)} (Coda API)")
+    teams = fetch_teams()
+    print(f"  Teams: {len(teams)} (Coda API)")
+
+    coda_data = {
+        "projects": projects,
+        "tasks": tasks,
+        "people": people,
+        "meetings": meetings,
+        "ressources": ressources,
+        "objectives": objectives,
+        "key_results": key_results,
+        "deals": deals,
+        "teams": teams,
+    }
+
     print("\nAnalyzing...")
-    output = analyze(tickets, services, sales, staff_list, units_list, kf_list, roles_list, spaces_list, contracts_list)
+    output = analyze(tickets, services, sales, staff_list, units_list, kf_list, roles_list, spaces_list, contracts_list, coda_data)
 
     out_path = APP / "public" / "data.json"
     with open(out_path, "w") as f:
