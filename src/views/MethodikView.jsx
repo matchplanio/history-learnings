@@ -24,6 +24,8 @@ export function MethodikView({ data }) {
   const dataSources = useMemo(() => meth.dataSources || [], [meth])
   const [expandedPipeline, setExpandedPipeline] = useState(null)
   const [activeSection, setActiveSection] = useState('overview')
+  const historicRoles = useMemo(() => data.historicRoles || [], [data])
+  const observableRoles = useMemo(() => historicRoles.filter(r => r.observable), [historicRoles])
 
   const tooltipStyle = { backgroundColor: theme.bg.card, border: `1px solid ${theme.border.default}`, borderRadius: 6, fontSize: 12 }
 
@@ -56,6 +58,7 @@ export function MethodikView({ data }) {
           { id: 'services', label: 'Service-Matching' },
           { id: 'projects', label: 'Projekt-Kategorien' },
           { id: 'sources', label: 'Datenquellen' },
+          { id: 'historic-roles', label: 'Historic Roles' },
         ].map(tab => (
           <button key={tab.id} onClick={() => setActiveSection(tab.id)} style={{
             padding: '8px 20px', borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: 'pointer',
@@ -395,6 +398,214 @@ export function MethodikView({ data }) {
                     <span style={{ color: theme.text.muted }}>{c.count} Hersteller ({c.members.slice(0, 3).join(', ')}...)</span>
                   </div>
                 ))}
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
+      {activeSection === 'historic-roles' && (
+        <>
+          {/* Fragestellung */}
+          <div style={sectionStyle}>
+            <h3 style={{ fontSize: 14, fontWeight: 600, color: theme.text.primary, marginBottom: 8 }}>Fragestellung</h3>
+            <p style={{ fontSize: 13, color: theme.text.secondary, margin: '0 0 12px 0', lineHeight: 1.7 }}>
+              Die offiziellen Coda-Rollen existieren erst seit 2024/2025. Jira-Tickets reichen jedoch bis 2018 zurück.
+              Die Kernfrage: <strong style={{ color: theme.text.primary }}>Wer hat vor Einführung der offiziellen Rollen
+              bereits implizit in welcher Funktion gearbeitet?</strong> Das zeigt, welche Personen natürliche
+              Kompetenzträger für eine Rolle sind — unabhängig davon, ob sie sie je formal inne hatten.
+            </p>
+            <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+              {[
+                { label: 'Rollen gesamt', value: historicRoles.length, color: theme.accent },
+                { label: 'Mit Jira-Signal', value: observableRoles.length, color: '#34d399' },
+                { label: 'Nicht messbar', value: historicRoles.length - observableRoles.length, color: theme.text.muted },
+                { label: 'Historische Carrier', value: historicRoles.reduce((s, r) => s + (r.historicCarriers?.length || 0), 0), color: '#fbbf24' },
+              ].map(s => (
+                <div key={s.label} style={{ padding: '8px 16px', borderRadius: 6, backgroundColor: theme.bg.elevated, border: `1px solid ${theme.border.subtle}` }}>
+                  <div style={{ fontSize: 20, fontWeight: 700, color: s.color }}>{s.value}</div>
+                  <div style={{ fontSize: 11, color: theme.text.muted }}>{s.label}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* 3-Schritt-Methodik */}
+          <div style={sectionStyle}>
+            <h3 style={{ fontSize: 14, fontWeight: 600, color: theme.text.primary, marginBottom: 16 }}>Vorgehen in 3 Schritten</h3>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
+              {[
+                {
+                  step: '1', color: '#22d3ee',
+                  title: 'Rollensignal definieren',
+                  desc: 'Für jede Coda-Rolle werden charakteristische Jira-Services und Projekte als "Rollensignal" festgelegt. Service Desk Agent → SD-Tickets; ISMS-Berater → Tickets mit ISMS-Keywords.',
+                },
+                {
+                  step: '2', color: '#fbbf24',
+                  title: 'Coverage berechnen',
+                  desc: 'Für jede Person: Coverage = Rollentickets / Gesamttickets. Eine hohe Coverage bedeutet: die Person arbeitete überwiegend in diesem Bereich. Ergänzt durch Absolut-Schwellen.',
+                },
+                {
+                  step: '3', color: '#34d399',
+                  title: 'Carrier ranken & filtern',
+                  desc: 'Sortierung nach coverage × min(totalTickets, 5000) — balanciert Qualität und Quantität. Bots, System-Accounts und Personen unter Mindestschwellen werden ausgeschlossen.',
+                },
+              ].map(s => (
+                <div key={s.step} style={{ padding: 16, borderRadius: 6, backgroundColor: theme.bg.elevated, borderLeft: `3px solid ${s.color}` }}>
+                  <div style={{ fontSize: 22, fontWeight: 700, color: s.color, marginBottom: 6 }}>Schritt {s.step}</div>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: theme.text.primary, marginBottom: 6 }}>{s.title}</div>
+                  <div style={{ fontSize: 12, color: theme.text.secondary, lineHeight: 1.6 }}>{s.desc}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Rollensignale Tabelle */}
+          <div style={sectionStyle}>
+            <h3 style={{ fontSize: 14, fontWeight: 600, color: theme.text.primary, marginBottom: 4 }}>Rollensignale (messbare Rollen)</h3>
+            <p style={{ fontSize: 12, color: theme.text.muted, marginBottom: 16 }}>
+              Für jede messbare Rolle wurden spezifische Jira-Services/Projekte als Signal definiert sowie Mindestschwellen festgelegt.
+            </p>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+              <thead>
+                <tr>
+                  {['Rolle', 'Services / Projekte als Signal', 'Min. Coverage', 'Min. Tickets abs.', 'Signal-Typ'].map(h => (
+                    <th key={h} style={{
+                      textAlign: 'left', padding: '8px 10px',
+                      borderBottom: `1px solid ${theme.border.default}`,
+                      color: theme.text.muted, fontWeight: 600, fontSize: 11,
+                    }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {[
+                  { role: 'Service Desk Agent (CuSe)', signal: 'Service Desk', signalType: 'Service', minCov: '20%', minAbs: '100', typeColor: '#22d3ee' },
+                  { role: 'Support Agent 2nd Level (MS)', signal: '13 MS-Services + SD/SDMS', signalType: 'Service + Projekt', minCov: '20%', minAbs: '30', typeColor: '#22d3ee' },
+                  { role: 'Support Agent 2nd Level (CP)', signal: '10 CP-Services + IEO', signalType: 'Service + Projekt', minCov: '5%', minAbs: '20', typeColor: '#22d3ee' },
+                  { role: 'Operations Engineer (MS)', signal: 'Monitoring, Backup, Infrastruktur, Checkmk, 1Password', signalType: 'Service', minCov: '15%', minAbs: '30', typeColor: '#22d3ee' },
+                  { role: 'Operations Engineer (CP)', signal: 'vDC, Housing, WireGuard, TaRZ, Openshift, SRB + IEO', signalType: 'Service + Projekt', minCov: '12%', minAbs: '30', typeColor: '#22d3ee' },
+                  { role: 'System Engineer Senior (EnCo)', signal: 'vCIO + SXPP', signalType: 'Service + Projekt', minCov: '5%', minAbs: '50', typeColor: '#fbbf24' },
+                  { role: 'System Engineer Junior (EnCo)', signal: 'vCIO + SXPP', signalType: 'Service + Projekt', minCov: '3%', minAbs: '60', typeColor: '#fbbf24' },
+                  { role: 'Senior Berater Informationssicherheit', signal: 'ISMS-Keywords (ISO 27001, TISAX, Audit…)', signalType: 'Keyword-Signal', minCov: '0.1%', minAbs: '3', typeColor: '#f87171' },
+                  { role: 'Software Engineer Senior (EnCo)', signal: 'IEO', signalType: 'Projekt', minCov: '30%', minAbs: '—', typeColor: '#fbbf24' },
+                  { role: 'Administrator Interne IT', signal: 'M365, managed Atlassian, AntiSpam', signalType: 'Service', minCov: '5%', minAbs: '20', typeColor: '#22d3ee' },
+                ].map(row => (
+                  <tr key={row.role}>
+                    <td style={{ padding: '7px 10px', borderBottom: `1px solid ${theme.border.subtle}`, color: theme.text.primary, fontWeight: 600 }}>{row.role}</td>
+                    <td style={{ padding: '7px 10px', borderBottom: `1px solid ${theme.border.subtle}`, color: theme.text.secondary, fontSize: 11 }}>{row.signal}</td>
+                    <td style={{ padding: '7px 10px', borderBottom: `1px solid ${theme.border.subtle}`, color: theme.accent, fontWeight: 600, textAlign: 'right' }}>{row.minCov}</td>
+                    <td style={{ padding: '7px 10px', borderBottom: `1px solid ${theme.border.subtle}`, color: theme.text.muted, textAlign: 'right' }}>{row.minAbs}</td>
+                    <td style={{ padding: '7px 10px', borderBottom: `1px solid ${theme.border.subtle}` }}>
+                      <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 9999, fontWeight: 600,
+                        backgroundColor: row.typeColor + '20', color: row.typeColor }}>
+                        {row.signalType}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Entscheidungslog */}
+          <div style={sectionStyle}>
+            <h3 style={{ fontSize: 14, fontWeight: 600, color: theme.text.primary, marginBottom: 16 }}>Entscheidungslog: Stichproben & Korrekturen</h3>
+            <p style={{ fontSize: 12, color: theme.text.muted, marginBottom: 16, lineHeight: 1.6 }}>
+              Nach der Erstimplementierung wurden Stichproben durchgeführt. Jede Abweichung wurde analysiert
+              und führte zu einer Anpassung der Schwellen oder Signaldefinition.
+            </p>
+            {[
+              {
+                issue: 'local-tecuser mit 96–97% Coverage',
+                finding: 'System-Account des Monitoring-Bots taucht als "Carrier" für mehrere Rollen auf.',
+                decision: 'Zur BOT_ACCOUNTS-Ausschlussliste hinzugefügt.',
+                color: '#f87171',
+                icon: '✗',
+              },
+              {
+                issue: 'System Engineer (Junior): False Positives (Ralf Keipert, Vincenzo Biasi)',
+                finding: 'SXPP (levigo-Beratungsprojekte) wird von Account Managern genutzt, um Kundenprojekte zu tracken — nicht nur von Ingenieuren. Ralf Keipert (41 SXPP-Tickets) und Vincenzo Biasi (39) schafften die erste Schwelle.',
+                decision: 'min_role_tickets_abs von 30 → 60 angehoben. AMs haben real deutlich weniger Beratungstickets als Ingenieure.',
+                color: '#fbbf24',
+                icon: '→',
+              },
+              {
+                issue: 'System Engineer (Senior): Oliver Bausch, Anne Schnee als False Positives',
+                finding: 'Gleiche Ursache: SXPP-Nutzung durch GF und Customer Service Unit Lead für Projektkoordination.',
+                decision: 'min_role_tickets_abs=50 für Senior eingeführt.',
+                color: '#fbbf24',
+                icon: '→',
+              },
+              {
+                issue: 'Senior Berater ISMS: 0 Carrier trotz klarer Kandidaten',
+                finding: 'Ursprüngliches Signal: SXPP-Projekt + ISMS-Services. Problem: max(SXPP, ISMS) ließ SXPP-Tickets als ISMS-Signal zählen → viele Nicht-ISMS-Leute mit hoher Coverage. Nach Korrektur: min_coverage=1% zu streng — ISMS-Tickets sind 0,4% der Gesamttätigkeit.',
+                decision: 'Reines Keyword-Signal: Tickets mit ISMS-Begriffen (ISO 27001, TISAX, Audit, BSI, Informationssicherheit…). SXPP vollständig entfernt. min_coverage=0.1%, min_role_tickets_abs=3 (mindestens 3 ISMS-Keyword-Tickets).',
+                color: '#f87171',
+                icon: '↺',
+              },
+              {
+                issue: 'Gino-Mario Franciosa (aktueller Service Desk Agent) nicht sichtbar',
+                finding: 'Carrier-Cap war bei 15. Gino-Mario Franciosa war auf Rang 16 — knapp unter der Sichtbarkeitsgrenze.',
+                decision: 'Carrier-Cap auf 20 erhöht.',
+                color: '#34d399',
+                icon: '↑',
+              },
+            ].map((d, i) => (
+              <div key={i} style={{
+                marginBottom: 12, padding: '12px 16px', borderRadius: 6,
+                backgroundColor: theme.bg.elevated, borderLeft: `3px solid ${d.color}`,
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                  <span style={{ fontSize: 14, color: d.color, fontWeight: 700 }}>{d.icon}</span>
+                  <span style={{ fontSize: 13, fontWeight: 600, color: theme.text.primary }}>{d.issue}</span>
+                </div>
+                <div style={{ fontSize: 12, color: theme.text.secondary, marginBottom: 6, lineHeight: 1.6 }}>
+                  <strong style={{ color: theme.text.muted }}>Befund:</strong> {d.finding}
+                </div>
+                <div style={{ fontSize: 12, color: '#34d399', lineHeight: 1.6 }}>
+                  <strong>Entscheidung:</strong> {d.decision}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Carrier-Algorithmus */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+            <div style={sectionStyle}>
+              <h3 style={{ fontSize: 14, fontWeight: 600, color: theme.text.primary, marginBottom: 16 }}>Carrier-Algorithmus</h3>
+              <div style={{ padding: 14, backgroundColor: theme.bg.elevated, borderRadius: 6, fontFamily: 'monospace', fontSize: 12, lineHeight: 2, color: theme.text.secondary }}>
+                <div><span style={{ color: '#fbbf24' }}>role_tix</span> = svc_tickets + proj_tickets</div>
+                <div style={{ color: '#8b949e', fontSize: 11 }}>  (oder: svc_tix + isms_keyword_tix für ISMS-Rolle)</div>
+                <div style={{ marginTop: 4 }}><span style={{ color: '#22d3ee' }}>coverage</span> = role_tix / total_tix</div>
+                <div style={{ marginTop: 4 }}><span style={{ color: '#34d399' }}>sort_key</span> = coverage × min(total_tix, 5000)</div>
+                <div style={{ color: '#8b949e', fontSize: 11 }}>  (Cap bei 5000 dämpft Volumen-Dominanz)</div>
+                <div style={{ marginTop: 8, color: '#f87171' }}>Filter: BOT_ACCOUNTS ausschließen</div>
+                <div style={{ color: '#f87171' }}>Filter: coverage {'<'} min_coverage → skip</div>
+                <div style={{ color: '#f87171' }}>Filter: role_tix {'<'} min_role_tickets_abs → skip</div>
+                <div style={{ color: '#f87171' }}>Filter: total_tix {'<'} min_tickets → skip</div>
+                <div style={{ marginTop: 8, color: theme.text.muted }}>Cap: top 20 Carrier pro Rolle</div>
+              </div>
+            </div>
+
+            <div style={sectionStyle}>
+              <h3 style={{ fontSize: 14, fontWeight: 600, color: theme.text.primary, marginBottom: 16 }}>Nicht-messbare Rollen</h3>
+              <p style={{ fontSize: 12, color: theme.text.secondary, marginBottom: 12, lineHeight: 1.6 }}>
+                Manche Rollen haben kein direktes Jira-Signal, weil sie strategischer oder kaufmännischer Natur sind.
+                Sie werden in der Ansicht als „nicht messbar" markiert.
+              </p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                {historicRoles.filter(r => !r.observable).slice(0, 12).map(r => (
+                  <div key={r.role} style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 8px', borderRadius: 4, backgroundColor: theme.bg.elevated }}>
+                    <span style={{ fontSize: 12, color: theme.text.secondary }}>{r.role}</span>
+                    <span style={{ fontSize: 10, color: theme.text.muted, fontStyle: 'italic' }}>{r.unit}</span>
+                  </div>
+                ))}
+                {historicRoles.filter(r => !r.observable).length > 12 && (
+                  <div style={{ fontSize: 11, color: theme.text.muted, textAlign: 'center', padding: 4 }}>
+                    +{historicRoles.filter(r => !r.observable).length - 12} weitere
+                  </div>
+                )}
               </div>
             </div>
           </div>
