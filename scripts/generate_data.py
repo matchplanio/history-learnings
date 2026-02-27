@@ -133,6 +133,235 @@ def load_kernfunktionen():
             })
     return kf_list
 
+def load_roles():
+    """Load roles from Coda Roles.csv (Public only)."""
+    roles = []
+    with open(CODA / "Roles.csv") as f:
+        for row in csv.DictReader(f):
+            if row.get("Status", "").strip() != "Public":
+                continue
+            roles.append({
+                "unit": row["Units"].strip(),
+                "role": row["Role"].strip(),
+                "kurzbeschreibung": row.get("Kurzbeschreibung", "").strip(),
+                "aufgaben": row.get("Aufgaben & Verantwortung", "").strip(),
+                "besetzung": row.get("Rollenbesetzung", "").strip(),
+                "fte": row.get("FTE", "").strip(),
+            })
+    return roles
+
+
+def analyze_historic_roles(tickets, roles_list, matchers):
+    """For each Coda role, find who historically performed it based on Jira ticket patterns."""
+
+    # Role signatures: map observable roles to their primary services/projects/types.
+    # Services without catalog unit rely on keywords - so we use actual service names from catalog.
+    ROLE_SERVICE_MAP = {
+        "Service Desk Agent (CuSe)": {
+            "services": ["Service Desk"],
+            "projects": [],
+            "min_coverage": 0.20,
+            "min_tickets": 100,
+        },
+        "Support Agent (2nd Level) (MS)": {
+            "services": [
+                "Managed Infrastruktur", "Managed Backup & DR", "Managed MS Exchange Server",
+                "Managed Firewall", "Managed Endpointsecurity", "Managed Networking (WLAN)",
+                "levigo AntiSpam", "Shared Firewall", "Managed Monitoring",
+                "Managed Bizzdesign Horizzon", "1Password operating", "Checkmk operating",
+                "Managed Microsoft 365", "managed Atlassian",
+            ],
+            "projects": ["SD", "SDMS"],
+            "min_coverage": 0.20,
+            "min_tickets": 30,
+        },
+        "Support Agent (2nd Level) (CP)": {
+            "services": [
+                "levigo vDC", "Housing", "levigo cloud.drive", "TaRZ",
+                "Managed Openshift", "levigo Webhosting", "levigo Internet-Services",
+                "managed.wireguard", "Secure Remote Browsing", "levigo/matrix Mail Server",
+            ],
+            "projects": ["IEO"],
+            "min_coverage": 0.05,
+            "min_tickets": 20,
+        },
+        "Operations Engineer (MS)": {
+            "services": [
+                "Managed Monitoring", "Managed Backup & DR", "Managed Infrastruktur",
+                "Checkmk operating", "1Password operating",
+            ],
+            "projects": [],
+            "min_coverage": 0.15,
+            "min_tickets": 30,
+        },
+        "Operations Engineer (CP)": {
+            "services": [
+                "levigo vDC", "Housing", "managed.wireguard", "TaRZ",
+                "Managed Openshift", "Secure Remote Browsing",
+            ],
+            "projects": ["IEO"],
+            "min_coverage": 0.05,
+            "min_tickets": 20,
+        },
+        "System Engineer (Senior) (EnCo)": {
+            "services": ["vCIO"],
+            "projects": ["SXPP"],
+            "min_coverage": 0.05,
+            "min_tickets": 20,
+        },
+        "System Engineer (Junior) (EnCo)": {
+            "services": ["vCIO"],
+            "projects": ["SXPP"],
+            "min_coverage": 0.03,
+            "min_tickets": 10,
+        },
+        "Senior Berater Informationssicherheit": {
+            "services": ["Cyber Risiko Check (nach DIN Spec 27076)", "Managed Informationssicherheit (ISMS)"],
+            "projects": ["SXPP"],
+            "isms_filter": True,      # Only count if they have ISMS-keyword tickets
+            "isms_min": 3,            # At least 3 ISMS tickets required
+            "min_coverage": 0.01,
+            "min_tickets": 10,
+        },
+        "Software Engineer (Senior) (EnCo)": {
+            "services": [],
+            "projects": ["IEO"],
+            "min_coverage": 0.30,
+            "min_tickets": 20,
+        },
+        "Administrator Interne IT": {
+            "services": ["Managed Microsoft 365", "managed Atlassian", "levigo AntiSpam"],
+            "projects": [],
+            "min_coverage": 0.05,
+            "min_tickets": 20,
+        },
+        "Operations Engineer": {  # generic alias for CP+MS
+            "services": [
+                "Managed Monitoring", "Managed Backup & DR", "levigo vDC",
+                "Housing", "Managed Infrastruktur",
+            ],
+            "projects": [],
+            "min_coverage": 0.10,
+            "min_tickets": 20,
+        },
+    }
+
+    # Bot/system accounts to exclude from carrier analysis
+    BOT_ACCOUNTS = {"Automation for Jira", "JIRA", "jira", "system", "System"}
+
+    # ISMS/security keyword filter for Senior Berater role
+    ISMS_KEYWORDS = re.compile(
+        r'\b(isms|iso.?27001|tisax|datenschutz|gdpr|dsgvo|audit|pentest|'
+        r'sicherheitskonzept|informationssicherheit|compliance|risikoanaly|'
+        r'bsi|grundschutz|sicherheitsrichtlinie|schutzbedarfsanalyse)\b',
+        re.IGNORECASE,
+    )
+
+    # Build per-person stats from all tickets
+    person_service_tix = defaultdict(Counter)
+    person_project_tix = defaultdict(Counter)
+    person_isms_tix = defaultdict(int)   # tickets with ISMS/security content
+    person_total = Counter()
+
+    for t in tickets:
+        assignee = t.get("assignee", "")
+        if not assignee or assignee in BOT_ACCOUNTS:
+            continue
+        person_total[assignee] += 1
+        svc = match_ticket(t, matchers)
+        if svc:
+            person_service_tix[assignee][svc] += 1
+        proj = t.get("project", "")
+        if proj:
+            person_project_tix[assignee][proj] += 1
+        summary = t.get("summary", "")
+        if ISMS_KEYWORDS.search(summary):
+            person_isms_tix[assignee] += 1
+
+    def parse_occupants(besetzung_str):
+        """Parse 'Name (40h), Name2 (20h)' → ['Name', 'Name2']"""
+        if not besetzung_str:
+            return []
+        parts = besetzung_str.split(",")
+        result = []
+        for p in parts:
+            clean = re.sub(r'\s*\(\d+h\)', '', p).strip()
+            if clean:
+                result.append(clean)
+        return result
+
+    result_roles = []
+    for role_data in roles_list:
+        role_name = role_data["role"]
+        sig = ROLE_SERVICE_MAP.get(role_name)
+        current = parse_occupants(role_data["besetzung"])
+
+        role_entry = {
+            "role": role_name,
+            "unit": role_data["unit"],
+            "kurzbeschreibung": role_data["kurzbeschreibung"],
+            "aufgaben": role_data["aufgaben"][:600] if role_data["aufgaben"] else "",
+            "fte": role_data["fte"],
+            "currentOccupants": current,
+            "historicCarriers": [],
+            "observable": sig is not None,
+        }
+
+        if sig:
+            sig_services = set(sig.get("services", []))
+            sig_projects = set(sig.get("projects", []))
+            min_coverage = sig.get("min_coverage", 0.10)
+            min_total = sig.get("min_tickets", 20)
+
+            use_isms_filter = sig.get("isms_filter", False)
+            isms_min = sig.get("isms_min", 0)
+
+            carriers = []
+            for person, total in person_total.most_common():
+                if total < min_total:
+                    continue
+                # ISMS-specific filter: person must have minimum ISMS keyword tickets
+                if use_isms_filter and person_isms_tix.get(person, 0) < isms_min:
+                    continue
+                svc_tix = sum(person_service_tix[person].get(s, 0) for s in sig_services)
+                proj_tix = sum(person_project_tix[person].get(p, 0) for p in sig_projects)
+                # For ISMS role: use ISMS ticket count as the role signal
+                if use_isms_filter:
+                    proj_tix = max(proj_tix, person_isms_tix.get(person, 0))
+                coverage = (svc_tix + proj_tix) / total if total > 0 else 0
+                if coverage >= min_coverage:
+                    top_svcs = sorted(
+                        [(s, person_service_tix[person][s]) for s in sig_services
+                         if person_service_tix[person].get(s, 0) > 0],
+                        key=lambda x: -x[1]
+                    )[:5]
+                    top_projs = sorted(
+                        [(p, person_project_tix[person][p]) for p in sig_projects
+                         if person_project_tix[person].get(p, 0) > 0],
+                        key=lambda x: -x[1]
+                    )[:3]
+                    entry = {
+                        "name": person,
+                        "totalTickets": total,
+                        "roleTickets": svc_tix + proj_tix,
+                        "coverage": round(coverage * 100, 1),
+                        "isCurrent": person in current,
+                        "topServices": [{"name": s, "count": c} for s, c in top_svcs],
+                        "topProjects": [{"name": p, "count": c} for p, c in top_projs],
+                    }
+                    if use_isms_filter:
+                        entry["ismsTickets"] = person_isms_tix.get(person, 0)
+                    carriers.append(entry)
+
+            # Sort by coverage × volume (cap volume at 5000 to avoid Peter Sturm dominating)
+            carriers.sort(key=lambda x: -(x["coverage"] * min(x["totalTickets"], 5000)))
+            role_entry["historicCarriers"] = carriers[:15]
+
+        result_roles.append(role_entry)
+
+    return result_roles
+
+
 def build_unit_keyword_map(units_list, kf_list):
     """Build keyword patterns per unit from Kernfunktionen + unit descriptions.
 
@@ -760,7 +989,7 @@ def extract_customer(ticket):
 
 # ── Analysis ──
 
-def analyze(tickets, services, sales, staff_list, units_list, kf_list):
+def analyze(tickets, services, sales, staff_list, units_list, kf_list, roles_list=None):
     matchers = build_matchers(services)
     unit_kw_map = build_unit_keyword_map(units_list, kf_list)
 
@@ -1627,6 +1856,10 @@ def analyze(tickets, services, sales, staff_list, units_list, kf_list):
         tickets, matched, matchers, customer_tickets, service_list, all_assignees
     )
 
+    # ── Historic Roles ──
+    if roles_list:
+        output["historicRoles"] = analyze_historic_roles(tickets, roles_list, matchers)
+
     return output
 
 
@@ -1848,8 +2081,11 @@ def main():
     kf_list = load_kernfunktionen()
     print(f"  Kernfunktionen: {len(kf_list)} functions")
 
+    roles_list = load_roles()
+    print(f"  Roles: {len(roles_list)} roles")
+
     print("\nAnalyzing...")
-    output = analyze(tickets, services, sales, staff_list, units_list, kf_list)
+    output = analyze(tickets, services, sales, staff_list, units_list, kf_list, roles_list)
 
     out_path = APP / "public" / "data.json"
     with open(out_path, "w") as f:
@@ -1867,6 +2103,10 @@ def main():
     print(f"  Projects: {output['projects']['totalProjects']} ({output['projects']['totalSubTasks']} sub-tasks)")
     print(f"  Revenue groups: {len(output['revenue'])}")
     print(f"  Unmatched top words: {', '.join(w['word'] for w in output['unmatched']['topWords'][:10])}")
+    if "historicRoles" in output:
+        observable = sum(1 for r in output["historicRoles"] if r["observable"])
+        carriers_total = sum(len(r["historicCarriers"]) for r in output["historicRoles"])
+        print(f"  Historic Roles: {len(output['historicRoles'])} roles ({observable} observable, {carriers_total} carrier matches)")
 
     # ── Generate ERP 2025 profiles ──
     generate_profiles(tickets, services, out_path.parent)
