@@ -517,6 +517,13 @@ export function MethodikView({ data }) {
             </p>
             {[
               {
+                issue: 'Zweite Datenquelle: Coda Spaces (Go2Guy)',
+                finding: 'Die Jira-Analyse zeigt historische Aktivität, sagt aber nichts darüber aus, wer formal als verantwortlich designiert ist. Coda Workspace HQ enthält eine "db Spaces"-Tabelle mit 40 Spaces (Dienste, Units, Initiativen) und Go2Guy-Zuordnungen.',
+                decision: 'Coda Spaces API wird live bei jedem generate_data.py-Lauf abgerufen. Carrier, die für relevante Spaces (z.B. "cmd-r Monitoring") oder ihre Unit ("Unit: Managed Service") als Go2Guy eingetragen sind, erhalten ein ◈-Badge in der Ansicht.',
+                color: '#a78bfa',
+                icon: '◈',
+              },
+              {
                 issue: 'local-tecuser mit 96–97% Coverage',
                 finding: 'System-Account des Monitoring-Bots taucht als "Carrier" für mehrere Rollen auf.',
                 decision: 'Zur BOT_ACCOUNTS-Ausschlussliste hinzugefügt.',
@@ -675,7 +682,8 @@ export function MethodikView({ data }) {
                 <div><span style={{ color: '#f87171', fontWeight: 600 }}>4.</span> Kunden-Extraktion (Prefix-Pattern)</div>
                 <div><span style={{ color: '#c084fc', fontWeight: 600 }}>5.</span> Projekt-Kategorisierung (Keywords)</div>
                 <div><span style={{ color: '#fb923c', fontWeight: 600 }}>6.</span> PBI DAX → Revenue + Hersteller</div>
-                <div><span style={{ color: '#60a5fa', fontWeight: 600 }}>7.</span> Aggregation → data.json Output</div>
+                <div><span style={{ color: '#a78bfa', fontWeight: 600 }}>7.</span> Coda Spaces API → Go2Guy-Zuordnungen (Historic Roles)</div>
+                <div><span style={{ color: '#60a5fa', fontWeight: 600 }}>8.</span> Aggregation → data.json Output</div>
               </div>
             </div>
           </div>

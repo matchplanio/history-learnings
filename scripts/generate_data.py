@@ -15,6 +15,7 @@ Output: public/data.json
 import json
 import csv
 import re
+import urllib.request
 from collections import Counter, defaultdict
 from pathlib import Path
 from datetime import date, datetime
@@ -23,6 +24,10 @@ VAULT = Path(__file__).resolve().parents[4]  # Kultur/
 APP = Path(__file__).resolve().parents[1]     # history-learnings/
 CODA = VAULT / "_Rohdaten" / "Coda" / "2026-01-25"
 DATA = VAULT / "_System" / "_Data"
+
+CODA_API_KEY = "efa56a0c-da49-4297-ba87-e2275401363c"
+CODA_DOC_ID = "nt1X2O_PCv"          # Workspace HQ
+CODA_SPACES_TABLE_ID = "grid-Kkft_zZFFC"  # db_Spaces
 
 # ── Load Sources ──
 
@@ -151,7 +156,36 @@ def load_roles():
     return roles
 
 
-def analyze_historic_roles(tickets, roles_list, matchers):
+def fetch_spaces():
+    """Fetch non-archived Spaces from Coda Workspace HQ including Go2Guys."""
+    url = (
+        f"https://coda.io/apis/v1/docs/{CODA_DOC_ID}/tables/{CODA_SPACES_TABLE_ID}"
+        f"/rows?limit=200&valueFormat=simple"
+    )
+    req = urllib.request.Request(url, headers={"Authorization": f"Bearer {CODA_API_KEY}"})
+    try:
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            data = json.loads(resp.read())
+    except Exception as e:
+        print(f"  Warning: Could not fetch Spaces from Coda: {e}")
+        return []
+
+    spaces = []
+    for row in data.get("items", []):
+        v = row["values"]
+        if v.get("c-0efCNijGar", False):   # Archived
+            continue
+        g2g_raw = v.get("c-vWywPRrn4_", "") or ""
+        go2guys = [g.strip() for g in g2g_raw.split(",") if g.strip()]
+        spaces.append({
+            "space": (v.get("c-WpKg032DXl") or "").strip(),
+            "category": (v.get("c-pr4mU4sxye") or "").strip(),
+            "go2guys": go2guys,
+        })
+    return spaces
+
+
+def analyze_historic_roles(tickets, roles_list, matchers, spaces_list=None):
     """For each Coda role, find who historically performed it based on Jira ticket patterns."""
 
     # Role signatures: map observable roles to their primary services/projects/types.
@@ -254,6 +288,34 @@ def analyze_historic_roles(tickets, roles_list, matchers):
 
     # Bot/system accounts to exclude from carrier analysis
     BOT_ACCOUNTS = {"Automation for Jira", "JIRA", "jira", "system", "System", "local-tecuser"}
+
+    # Jira service name → Coda Space name (for Go2Guy cross-reference)
+    SERVICE_TO_SPACE = {
+        "Managed Monitoring":       "cmd-r Monitoring",
+        "Checkmk operating":        "cmd-r Monitoring",
+        "Managed Backup & DR":      "cmd-r Managed Backup & DR",
+        "Managed Infrastruktur":    "cmd-r Infrastruktur",
+        "managed.wireguard":        "cmd-r Wireguard",
+        "Managed Microsoft 365":    "cmd-r Microsoft 365 Management",
+        "levigo vDC":               "cmd-r virtuelles Rechenzentrum",
+        "Managed Endpointsecurity": "cmd-r Endpoint Security",
+    }
+
+    # Role unit → Coda unit space name
+    UNIT_TO_SPACE = {
+        "Managed Services":         "Unit: Managed Service",
+        "Customer Service":         "Unit: Customer Service",
+        "Engineering & Consulting": "Unit: Engineering & Consulting",
+        "Sales & Marketing":        "Unit: Sales & Marketing",
+    }
+
+    # Build person → list of Coda spaces they are Go2Guy for
+    person_spaces: dict[str, list[str]] = defaultdict(list)
+    if spaces_list:
+        for space in spaces_list:
+            for g2g in space.get("go2guys", []):
+                if g2g:
+                    person_spaces[g2g].append(space["space"])
 
     # ISMS/security keyword filter for Senior Berater role
     ISMS_KEYWORDS = re.compile(
@@ -364,6 +426,22 @@ def analyze_historic_roles(tickets, roles_list, matchers):
                     }
                     if use_isms_filter:
                         entry["ismsTickets"] = person_isms_tix.get(person, 0)
+                    # Coda Spaces Go2Guy cross-reference
+                    if spaces_list:
+                        relevant_spaces = set()
+                        for svc in sig_services:
+                            mapped = SERVICE_TO_SPACE.get(svc)
+                            if mapped:
+                                relevant_spaces.add(mapped)
+                        unit_space = UNIT_TO_SPACE.get(role_data["unit"])
+                        if unit_space:
+                            relevant_spaces.add(unit_space)
+                        go2guy_spaces = [
+                            s for s in person_spaces.get(person, [])
+                            if s in relevant_spaces
+                        ]
+                        if go2guy_spaces:
+                            entry["spacesGoTo"] = go2guy_spaces
                     carriers.append(entry)
 
             # Sort by coverage × volume (cap volume at 5000 to avoid Peter Sturm dominating)
@@ -1002,7 +1080,7 @@ def extract_customer(ticket):
 
 # ── Analysis ──
 
-def analyze(tickets, services, sales, staff_list, units_list, kf_list, roles_list=None):
+def analyze(tickets, services, sales, staff_list, units_list, kf_list, roles_list=None, spaces_list=None):
     matchers = build_matchers(services)
     unit_kw_map = build_unit_keyword_map(units_list, kf_list)
 
@@ -1871,7 +1949,7 @@ def analyze(tickets, services, sales, staff_list, units_list, kf_list, roles_lis
 
     # ── Historic Roles ──
     if roles_list:
-        output["historicRoles"] = analyze_historic_roles(tickets, roles_list, matchers)
+        output["historicRoles"] = analyze_historic_roles(tickets, roles_list, matchers, spaces_list=spaces_list)
 
     return output
 
@@ -2097,8 +2175,12 @@ def main():
     roles_list = load_roles()
     print(f"  Roles: {len(roles_list)} roles")
 
+    spaces_list = fetch_spaces()
+    go2guy_count = sum(len(s["go2guys"]) for s in spaces_list)
+    print(f"  Spaces: {len(spaces_list)} spaces ({go2guy_count} Go2Guy assignments, Coda API)")
+
     print("\nAnalyzing...")
-    output = analyze(tickets, services, sales, staff_list, units_list, kf_list, roles_list)
+    output = analyze(tickets, services, sales, staff_list, units_list, kf_list, roles_list, spaces_list)
 
     out_path = APP / "public" / "data.json"
     with open(out_path, "w") as f:

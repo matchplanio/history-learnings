@@ -107,6 +107,19 @@ function CarrierRow({ carrier, onClick }) {
             {carrier.ismsTickets} ISMS-Tickets
           </span>
         )}
+        {carrier.spacesGoTo?.length > 0 && (
+          <span title={`Coda Spaces Go2Guy: ${carrier.spacesGoTo.join(', ')}`} style={{
+            fontSize: 10,
+            padding: '1px 6px',
+            borderRadius: 4,
+            backgroundColor: '#1e1a2e',
+            color: '#a78bfa',
+            border: `1px solid #4c1d95`,
+            cursor: 'help',
+          }}>
+            ◈ Spaces Go2Guy
+          </span>
+        )}
         <span style={{ fontSize: 11, color: theme.text.muted, marginLeft: 'auto' }}>
           {carrier.totalTickets.toLocaleString()} gesamt · {carrier.roleTickets.toLocaleString()} Rollen-Tickets
         </span>
