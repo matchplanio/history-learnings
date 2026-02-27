@@ -28,6 +28,8 @@ DATA = VAULT / "_System" / "_Data"
 CODA_API_KEY = "efa56a0c-da49-4297-ba87-e2275401363c"
 CODA_DOC_ID = "nt1X2O_PCv"          # Workspace HQ
 CODA_SPACES_TABLE_ID = "grid-Kkft_zZFFC"  # db_Spaces
+CODA_ORGS_TABLE_ID = "grid-miSV3rljB6"    # db_Organizations
+CODA_CONTRACTS_TABLE_ID = "grid-aEgKomlSSF"  # db_Contracts
 
 # ── Load Sources ──
 
@@ -183,6 +185,122 @@ def fetch_spaces():
             "go2guys": go2guys,
         })
     return spaces
+
+
+def _coda_fetch_all(table_id):
+    """Fetch all rows from a Coda table (handles pagination)."""
+    items = []
+    page_token = None
+    while True:
+        url = (
+            f"https://coda.io/apis/v1/docs/{CODA_DOC_ID}/tables/{table_id}"
+            f"/rows?limit=200&valueFormat=simple"
+        )
+        if page_token:
+            url += f"&pageToken={page_token}"
+        req = urllib.request.Request(url, headers={"Authorization": f"Bearer {CODA_API_KEY}"})
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            data = json.loads(resp.read())
+        items.extend(data.get("items", []))
+        page_token = data.get("nextPageToken")
+        if not page_token:
+            break
+    return items
+
+
+def _parse_eur(raw):
+    """Parse German Euro format '€1.100,00' → float 1100.0. Returns None on failure."""
+    if not raw:
+        return None
+    s = str(raw).replace("€", "").replace("\xa0", "").strip()
+    s = s.replace(".", "").replace(",", ".")
+    try:
+        return round(float(s), 2)
+    except ValueError:
+        return None
+
+
+def _parse_pct(raw):
+    """Parse usage '21,55 %' or '21,55\xa0%' → float 21.55. Returns None on failure."""
+    if not raw:
+        return None
+    s = str(raw).replace("\xa0", "").replace("%", "").strip().replace(",", ".")
+    try:
+        return round(float(s), 1)
+    except ValueError:
+        return None
+
+
+def _norm_org(name):
+    """Normalize org name for fuzzy matching: lowercase, keep only alphanumeric."""
+    return re.sub(r'[^a-z0-9]', '', name.lower())
+
+
+def fetch_organizations():
+    """Fetch non-archived organizations from Coda Workspace HQ."""
+    try:
+        items = _coda_fetch_all(CODA_ORGS_TABLE_ID)
+    except Exception as e:
+        print(f"  Warning: Could not fetch Organizations from Coda: {e}")
+        return []
+    orgs = []
+    for row in items:
+        v = row["values"]
+        if v.get("c-QR-H8cL7EI", False):  # Archived
+            continue
+        orgs.append({
+            "name": (v.get("c-WpKg032DXl") or "").strip(),
+            "type": (v.get("c-T7at2wQrin") or "").strip(),
+            "elsa": v.get("c-6kW6NvzIPI"),
+            "city": (v.get("c-WYmZSJsdoA") or "").strip(),
+            "website": (v.get("c-NOlhOu1SRj") or "").strip(),
+            "salesContact": (v.get("c-8UJRVvBeiV") or "").strip(),
+            "techContact": (v.get("c-6cVyE7gAmQ") or "").strip(),
+        })
+    return orgs
+
+
+def fetch_contracts():
+    """Fetch Active contracts from Coda Workspace HQ."""
+    try:
+        items = _coda_fetch_all(CODA_CONTRACTS_TABLE_ID)
+    except Exception as e:
+        print(f"  Warning: Could not fetch Contracts from Coda: {e}")
+        return []
+    contracts = []
+    for row in items:
+        v = row["values"]
+        status = (v.get("c-fHHr_b1MqK") or "").strip()
+        if status not in ("Active", "Onboarding"):
+            continue
+        parts_raw = (v.get("c-_cVCsME_of") or "").strip()
+        parts = [p.strip() for p in parts_raw.split(",") if p.strip()] if parts_raw else []
+        # Deduplicate parts (Contract Parts sometimes has duplicates from add/del pairs)
+        seen = set()
+        parts_deduped = []
+        for p in parts:
+            if p not in seen:
+                seen.add(p)
+                parts_deduped.append(p)
+        monthly = _parse_eur(v.get("c-PbBCR0RRtB"))
+        annual = _parse_eur(v.get("c-vrLQFKeFGG"))
+        avg_usage = _parse_pct(v.get("c--EcBn8jOKQ"))
+        start_raw = (v.get("c-27MRtoYpZe") or "")[:10]  # YYYY-MM-DD
+        contracts.append({
+            "contractName": (v.get("c-5tht3atIJS") or "").strip(),
+            "org": (v.get("c-T7at2wQrin") or "").strip(),
+            "type": (v.get("c-SlTXy0NCn4") or "").strip(),
+            "level": (v.get("c-wKiJ29NQaR") or "").strip(),
+            "status": status,
+            "monthlyValue": monthly,
+            "annualValue": annual,
+            "avgUsage": avg_usage,
+            "parts": parts_deduped,
+            "salesContact": (v.get("c-8G1feDI6WC") or "").strip(),
+            "techContact": (v.get("c-wvkBhO0mfC") or "").strip(),
+            "startDate": start_raw,
+        })
+    return contracts
 
 
 def analyze_historic_roles(tickets, roles_list, matchers, spaces_list=None):
@@ -1080,7 +1198,7 @@ def extract_customer(ticket):
 
 # ── Analysis ──
 
-def analyze(tickets, services, sales, staff_list, units_list, kf_list, roles_list=None, spaces_list=None):
+def analyze(tickets, services, sales, staff_list, units_list, kf_list, roles_list=None, spaces_list=None, contracts_list=None):
     matchers = build_matchers(services)
     unit_kw_map = build_unit_keyword_map(units_list, kf_list)
 
@@ -1461,10 +1579,65 @@ def analyze(tickets, services, sales, staff_list, units_list, kf_list, roles_lis
     # Only keep top 80 customers for data size
     customer_list = customer_list[:80]
 
+    # ── Coda contract enrichment ──
+    # Build lookup: normalized org name → list of contracts (org may have multiple)
+    coda_contract_lookup: dict[str, list] = defaultdict(list)
+    if contracts_list:
+        for c in contracts_list:
+            key = _norm_org(c["org"])
+            if key:
+                coda_contract_lookup[key].append(c)
+
+    def _find_contract(jira_name: str):
+        """Return best-matching Coda contracts for a Jira customer prefix name."""
+        norm_jira = _norm_org(jira_name)
+        # Exact match first
+        if norm_jira in coda_contract_lookup:
+            return coda_contract_lookup[norm_jira]
+        # Prefix match: Coda name is prefix of Jira name (e.g. 'beck' → 'beck packautomaten')
+        for coda_norm, contracts in coda_contract_lookup.items():
+            if norm_jira.startswith(coda_norm) or coda_norm.startswith(norm_jira):
+                return contracts
+        return None
+
+    for c in customer_list:
+        matched_contracts = _find_contract(c["name"])
+        if matched_contracts:
+            # Aggregate: sum monthly values, collect levels, parts
+            total_monthly = sum(mc["monthlyValue"] or 0 for mc in matched_contracts)
+            total_annual = sum(mc["annualValue"] or 0 for mc in matched_contracts)
+            all_parts = sorted(set(p for mc in matched_contracts for p in mc["parts"]))
+            levels = sorted(set(mc["level"] for mc in matched_contracts if mc["level"]))
+            avg_usage_vals = [mc["avgUsage"] for mc in matched_contracts if mc["avgUsage"] is not None]
+            avg_usage = round(sum(avg_usage_vals) / len(avg_usage_vals), 1) if avg_usage_vals else None
+            sales_contact = next((mc["salesContact"] for mc in matched_contracts if mc["salesContact"]), "")
+            tech_contact = next((mc["techContact"] for mc in matched_contracts if mc["techContact"]), "")
+            c["codaContract"] = {
+                "contracts": matched_contracts,
+                "levels": levels,
+                "totalMonthly": round(total_monthly, 2),
+                "totalAnnual": round(total_annual, 2),
+                "avgUsage": avg_usage,
+                "parts": all_parts,
+                "salesContact": sales_contact,
+                "techContact": tech_contact,
+            }
+
+    # Build codaContracts summary (all active, sorted by monthly value desc)
+    sorted_contracts = sorted(
+        contracts_list or [],
+        key=lambda c: -(c["monthlyValue"] or 0)
+    )
+    total_mrr = sum(c["monthlyValue"] or 0 for c in sorted_contracts)
+    total_arr = sum(c["annualValue"] or 0 for c in sorted_contracts)
+
     customer_meta = {
         "totalCustomers": len(customer_tickets),
         "customersWithTickets": len([c for c in customer_list if c["tickets"] >= 3]),
         "totalCustomerTickets": sum(len(v) for v in customer_tickets.values()),
+        "codaActiveContracts": len(sorted_contracts),
+        "codaTotalMRR": round(total_mrr, 2),
+        "codaTotalARR": round(total_arr, 2),
     }
 
     # ── Project analysis (SXPP) ──
@@ -1942,6 +2115,9 @@ def analyze(tickets, services, sales, staff_list, units_list, kf_list, roles_lis
         "methodology": methodology,
     }
 
+    # ── Coda Contracts ──
+    output["codaContracts"] = sorted_contracts
+
     # ── Cross-references (Querbeziehungen) ──
     output["crossReferences"] = _build_cross_references(
         tickets, matched, matchers, customer_tickets, service_list, all_assignees
@@ -2179,8 +2355,12 @@ def main():
     go2guy_count = sum(len(s["go2guys"]) for s in spaces_list)
     print(f"  Spaces: {len(spaces_list)} spaces ({go2guy_count} Go2Guy assignments, Coda API)")
 
+    contracts_list = fetch_contracts()
+    total_mrr = sum(c["monthlyValue"] or 0 for c in contracts_list)
+    print(f"  Contracts: {len(contracts_list)} active contracts (MRR: €{total_mrr:,.0f}, Coda API)")
+
     print("\nAnalyzing...")
-    output = analyze(tickets, services, sales, staff_list, units_list, kf_list, roles_list, spaces_list)
+    output = analyze(tickets, services, sales, staff_list, units_list, kf_list, roles_list, spaces_list, contracts_list)
 
     out_path = APP / "public" / "data.json"
     with open(out_path, "w") as f:
@@ -2195,6 +2375,8 @@ def main():
     print(f"  Units: {len(output['units'])}")
     print(f"  Monthly data points: {len(output['monthlyTrend'])}")
     print(f"  Customers: {output['customerMeta']['totalCustomers']} ({output['customerMeta']['totalCustomerTickets']} tickets)")
+    enriched = sum(1 for c in output['customers'] if c.get('codaContract'))
+    print(f"  Contracts: {output['customerMeta']['codaActiveContracts']} active, MRR €{output['customerMeta']['codaTotalMRR']:,.0f}, {enriched} customers enriched")
     print(f"  Projects: {output['projects']['totalProjects']} ({output['projects']['totalSubTasks']} sub-tasks)")
     print(f"  Revenue groups: {len(output['revenue'])}")
     print(f"  Unmatched top words: {', '.join(w['word'] for w in output['unmatched']['topWords'][:10])}")

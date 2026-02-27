@@ -8,6 +8,30 @@ const sectionStyle = {
 
 const colors = ['#22d3ee', '#34d399', '#fbbf24', '#f87171', '#60a5fa', '#c084fc', '#fb923c', '#2dd4bf', '#f472b6', '#8b949e']
 
+const LEVEL_COLORS = {
+  'Basic':        { bg: '#21262d', text: '#8b949e', border: '#30363d' },
+  'Prime':        { bg: '#2d2518', text: '#fbbf24', border: '#92400e' },
+  'Flat':         { bg: '#1a2e2a', text: '#34d399', border: '#064e3b' },
+  'vDC Standard': { bg: '#1e1a2e', text: '#a78bfa', border: '#4c1d95' },
+  'vDC Premium':  { bg: '#1a2040', text: '#60a5fa', border: '#1e3a5f' },
+}
+
+function LevelBadge({ level }) {
+  const col = LEVEL_COLORS[level] || { bg: '#21262d', text: '#8b949e', border: '#30363d' }
+  return (
+    <span style={{
+      fontSize: 10, padding: '1px 6px', borderRadius: 4,
+      backgroundColor: col.bg, color: col.text, border: `1px solid ${col.border}`,
+      whiteSpace: 'nowrap',
+    }}>{level}</span>
+  )
+}
+
+function formatEur(v) {
+  if (!v && v !== 0) return '—'
+  return '€' + v.toLocaleString('de-DE', { minimumFractionDigits: 0, maximumFractionDigits: 0 })
+}
+
 export function CustomerView({ data, onServiceClick }) {
   const customers = useMemo(() => data.customers || [], [data])
   const meta = useMemo(() => data.customerMeta || {}, [data])
@@ -21,6 +45,7 @@ export function CustomerView({ data, onServiceClick }) {
       if (sortBy === 'incidents') return b.incidents - a.incidents
       if (sortBy === 'incidentRate') return b.incidentRate - a.incidentRate
       if (sortBy === 'services') return b.servicesCount - a.servicesCount
+      if (sortBy === 'mrr') return (b.codaContract?.totalMonthly || 0) - (a.codaContract?.totalMonthly || 0)
       return b.tickets - a.tickets
     }),
   [customers, sortBy, filterMinTickets])
@@ -57,16 +82,18 @@ export function CustomerView({ data, onServiceClick }) {
       </div>
 
       {/* KPI cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 16 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 12, marginBottom: 16 }}>
         {[
           { label: 'Kunden', value: meta.totalCustomers, color: theme.accent },
           { label: 'Kunden-Tickets', value: meta.totalCustomerTickets?.toLocaleString(), color: '#34d399' },
           { label: 'Ø Tickets/Kunde', value: meta.totalCustomers ? Math.round(meta.totalCustomerTickets / meta.totalCustomers) : 0, color: '#fbbf24' },
-          { label: 'Top 20 Anteil', value: customers.slice(0, 20).reduce((s, c) => s + c.tickets, 0).toLocaleString(), color: '#f87171' },
+          { label: 'Aktive Verträge', value: meta.codaActiveContracts || 0, color: '#a78bfa' },
+          { label: 'Gesamt MRR', value: formatEur(meta.codaTotalMRR), color: '#60a5fa' },
+          { label: 'Gesamt ARR', value: formatEur(meta.codaTotalARR), color: '#2dd4bf' },
         ].map(kpi => (
           <div key={kpi.label} style={sectionStyle}>
             <div style={{ fontSize: 11, color: theme.text.muted, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 6 }}>{kpi.label}</div>
-            <div style={{ fontSize: 28, fontWeight: 700, color: kpi.color }}>{kpi.value}</div>
+            <div style={{ fontSize: 22, fontWeight: 700, color: kpi.color }}>{kpi.value}</div>
           </div>
         ))}
       </div>
@@ -104,14 +131,20 @@ export function CustomerView({ data, onServiceClick }) {
       {/* Controls */}
       <div style={{ ...sectionStyle, display: 'flex', gap: 16, alignItems: 'center' }}>
         <div style={{ fontSize: 12, color: theme.text.muted }}>Sortierung:</div>
-        {['tickets', 'incidents', 'incidentRate', 'services'].map(s => (
-          <button key={s} onClick={() => setSortBy(s)} style={{
+        {[
+          { id: 'tickets', label: 'Tickets' },
+          { id: 'incidents', label: 'Incidents' },
+          { id: 'incidentRate', label: 'Incident-Rate' },
+          { id: 'services', label: 'Services' },
+          { id: 'mrr', label: 'MRR' },
+        ].map(s => (
+          <button key={s.id} onClick={() => setSortBy(s.id)} style={{
             padding: '4px 12px', borderRadius: 6, fontSize: 12, cursor: 'pointer',
-            border: `1px solid ${sortBy === s ? theme.accent : theme.border.subtle}`,
-            backgroundColor: sortBy === s ? theme.accent + '20' : 'transparent',
-            color: sortBy === s ? theme.accent : theme.text.secondary,
+            border: `1px solid ${sortBy === s.id ? theme.accent : theme.border.subtle}`,
+            backgroundColor: sortBy === s.id ? theme.accent + '20' : 'transparent',
+            color: sortBy === s.id ? theme.accent : theme.text.secondary,
             fontFamily: 'inherit',
-          }}>{s === 'tickets' ? 'Tickets' : s === 'incidents' ? 'Incidents' : s === 'incidentRate' ? 'Incident-Rate' : 'Services'}</button>
+          }}>{s.label}</button>
         ))}
         <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8 }}>
           <span style={{ fontSize: 12, color: theme.text.muted }}>Min. Tickets:</span>
@@ -135,29 +168,41 @@ export function CustomerView({ data, onServiceClick }) {
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
           <thead>
             <tr>
-              {['Kunde', 'Tickets', 'Incidents', 'Rate', 'Services', 'Match%', 'Aktiv seit', 'Letzte Aktivität'].map(h => (
+              {['Kunde', 'Vertrag', 'MRR', 'Tickets', 'Incidents', 'Rate', 'Services', 'Match%', 'Aktiv seit'].map(h => (
                 <th key={h} style={{ textAlign: 'left', padding: '8px 10px', borderBottom: `1px solid ${theme.border.default}`, color: theme.text.muted, fontWeight: 600, fontSize: 12 }}>{h}</th>
               ))}
             </tr>
           </thead>
           <tbody>
-            {filtered.map(c => (
-              <tr key={c.name}
-                onClick={() => setSelectedCustomer(selectedCustomer === c.name ? null : c.name)}
-                style={{ cursor: 'pointer' }}
-                onMouseEnter={e => e.currentTarget.style.backgroundColor = theme.bg.elevated}
-                onMouseLeave={e => e.currentTarget.style.backgroundColor = selectedCustomer === c.name ? theme.accent + '10' : 'transparent'}
-              >
-                <td style={{ padding: '6px 10px', borderBottom: `1px solid ${theme.border.subtle}`, color: theme.text.primary, fontWeight: selectedCustomer === c.name ? 600 : 400 }}>{c.name}</td>
-                <td style={{ padding: '6px 10px', borderBottom: `1px solid ${theme.border.subtle}`, color: theme.text.primary, fontWeight: 600 }}>{c.tickets.toLocaleString()}</td>
-                <td style={{ padding: '6px 10px', borderBottom: `1px solid ${theme.border.subtle}`, color: theme.semantic.error }}>{c.incidents.toLocaleString()}</td>
-                <td style={{ padding: '6px 10px', borderBottom: `1px solid ${theme.border.subtle}`, color: c.incidentRate > 30 ? theme.semantic.error : theme.text.muted }}>{c.incidentRate}%</td>
-                <td style={{ padding: '6px 10px', borderBottom: `1px solid ${theme.border.subtle}`, color: theme.text.primary }}>{c.servicesCount}</td>
-                <td style={{ padding: '6px 10px', borderBottom: `1px solid ${theme.border.subtle}`, color: c.matchRate > 60 ? '#34d399' : theme.text.muted }}>{c.matchRate}%</td>
-                <td style={{ padding: '6px 10px', borderBottom: `1px solid ${theme.border.subtle}`, color: theme.text.muted }}>{c.activeSince}</td>
-                <td style={{ padding: '6px 10px', borderBottom: `1px solid ${theme.border.subtle}`, color: theme.text.muted }}>{c.lastActive}</td>
-              </tr>
-            ))}
+            {filtered.map(c => {
+              const cc = c.codaContract
+              return (
+                <tr key={c.name}
+                  onClick={() => setSelectedCustomer(selectedCustomer === c.name ? null : c.name)}
+                  style={{ cursor: 'pointer' }}
+                  onMouseEnter={e => e.currentTarget.style.backgroundColor = theme.bg.elevated}
+                  onMouseLeave={e => e.currentTarget.style.backgroundColor = selectedCustomer === c.name ? theme.accent + '10' : 'transparent'}
+                >
+                  <td style={{ padding: '6px 10px', borderBottom: `1px solid ${theme.border.subtle}`, color: theme.text.primary, fontWeight: selectedCustomer === c.name ? 600 : 400 }}>{c.name}</td>
+                  <td style={{ padding: '6px 10px', borderBottom: `1px solid ${theme.border.subtle}` }}>
+                    {cc ? (
+                      <div style={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
+                        {cc.levels.map(l => <LevelBadge key={l} level={l} />)}
+                      </div>
+                    ) : <span style={{ color: theme.text.muted, fontSize: 11 }}>—</span>}
+                  </td>
+                  <td style={{ padding: '6px 10px', borderBottom: `1px solid ${theme.border.subtle}`, color: cc ? '#60a5fa' : theme.text.muted, fontVariantNumeric: 'tabular-nums' }}>
+                    {cc ? formatEur(cc.totalMonthly) : '—'}
+                  </td>
+                  <td style={{ padding: '6px 10px', borderBottom: `1px solid ${theme.border.subtle}`, color: theme.text.primary, fontWeight: 600 }}>{c.tickets.toLocaleString()}</td>
+                  <td style={{ padding: '6px 10px', borderBottom: `1px solid ${theme.border.subtle}`, color: theme.semantic.error }}>{c.incidents.toLocaleString()}</td>
+                  <td style={{ padding: '6px 10px', borderBottom: `1px solid ${theme.border.subtle}`, color: c.incidentRate > 30 ? theme.semantic.error : theme.text.muted }}>{c.incidentRate}%</td>
+                  <td style={{ padding: '6px 10px', borderBottom: `1px solid ${theme.border.subtle}`, color: theme.text.primary }}>{c.servicesCount}</td>
+                  <td style={{ padding: '6px 10px', borderBottom: `1px solid ${theme.border.subtle}`, color: c.matchRate > 60 ? '#34d399' : theme.text.muted }}>{c.matchRate}%</td>
+                  <td style={{ padding: '6px 10px', borderBottom: `1px solid ${theme.border.subtle}`, color: theme.text.muted }}>{c.activeSince}</td>
+                </tr>
+              )
+            })}
           </tbody>
         </table>
       </div>
@@ -218,6 +263,64 @@ export function CustomerView({ data, onServiceClick }) {
               </ResponsiveContainer>
             </div>
           </div>
+
+          {/* Coda Contract Info */}
+          {detail.codaContract && (() => {
+            const cc = detail.codaContract
+            return (
+              <div style={{
+                marginTop: 16, padding: '14px 16px',
+                backgroundColor: '#1a2040', border: '1px solid #1e3a5f', borderRadius: 8,
+              }}>
+                <div style={{ fontSize: 11, fontWeight: 600, color: '#93c5fd', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 12 }}>
+                  ◈ Coda Vertragsinfo
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 12 }}>
+                  {[
+                    { label: 'Level(s)', value: cc.levels.join(' + ') || '—' },
+                    { label: 'MRR', value: formatEur(cc.totalMonthly) },
+                    { label: 'ARR', value: formatEur(cc.totalAnnual) },
+                    { label: 'Ø Nutzung', value: cc.avgUsage != null ? cc.avgUsage + ' %' : '—' },
+                  ].map(kpi => (
+                    <div key={kpi.label}>
+                      <div style={{ fontSize: 10, color: '#93c5fd', marginBottom: 2 }}>{kpi.label}</div>
+                      <div style={{ fontSize: 15, fontWeight: 700, color: '#60a5fa' }}>{kpi.value}</div>
+                    </div>
+                  ))}
+                </div>
+                {cc.parts.length > 0 && (
+                  <div style={{ marginBottom: 10 }}>
+                    <div style={{ fontSize: 10, color: '#93c5fd', marginBottom: 6 }}>VERTRAGSBESTANDTEILE</div>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                      {cc.parts.map(p => (
+                        <span key={p} style={{
+                          fontSize: 11, padding: '2px 8px', borderRadius: 4,
+                          backgroundColor: '#1e3a5f', color: '#93c5fd', border: '1px solid #2563eb',
+                        }}>{p}</span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {cc.contracts.length > 1 && (
+                  <div>
+                    <div style={{ fontSize: 10, color: '#93c5fd', marginBottom: 6 }}>EINZELVERTRÄGE</div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                      {cc.contracts.map(con => (
+                        <div key={con.contractName} style={{ display: 'flex', gap: 8, alignItems: 'center', fontSize: 11 }}>
+                          <LevelBadge level={con.level} />
+                          <span style={{ color: '#93c5fd' }}>{con.contractName}</span>
+                          <span style={{ color: '#60a5fa', marginLeft: 'auto' }}>{formatEur(con.monthlyValue)}/mo</span>
+                          {con.avgUsage != null && (
+                            <span style={{ color: con.avgUsage > 100 ? '#f87171' : '#8b949e', minWidth: 60, textAlign: 'right' }}>{con.avgUsage} %</span>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )
+          })()}
 
           {/* Services + Assignees */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginTop: 16 }}>
