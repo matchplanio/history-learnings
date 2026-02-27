@@ -34,7 +34,7 @@ const categoryColors = {
   'Sonstiges': '#8b949e',
 }
 
-export function ProjectView({ data, onServiceClick }) {
+export function ProjectView({ data }) {
   const proj = useMemo(() => data.projects || {}, [data])
   const projects = useMemo(() => proj.projects || [], [proj])
   const revenue = useMemo(() => data.revenue || [], [data])
@@ -237,7 +237,7 @@ export function ProjectView({ data, onServiceClick }) {
 
             <div style={sectionStyle}>
               <h3 style={{ fontSize: 14, fontWeight: 600, color: theme.text.primary, marginBottom: 16 }}>Top Kunden (Projekte)</h3>
-              {customerData.map((c, i) => {
+              {customerData.map((c) => {
                 const max = customerData[0]?.count || 1
                 return (
                   <div key={c.name} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6, fontSize: 12 }}>

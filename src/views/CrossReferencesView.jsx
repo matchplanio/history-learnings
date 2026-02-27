@@ -71,15 +71,15 @@ export function CrossReferencesView({ data, onServiceClick }) {
 }
 
 function CooccurrenceTab({ cr, onServiceClick }) {
-  const edges = cr.serviceCooccurrence || []
-  const top30 = edges.slice(0, 30)
+  const edges = useMemo(() => cr.serviceCooccurrence || [], [cr])
+  const top30 = useMemo(() => edges.slice(0, 30), [edges])
 
-  const chartData = top30.map(e => ({
+  const chartData = useMemo(() => top30.map(e => ({
     name: `${shorten(e.source)} + ${shorten(e.target)}`,
     customers: e.customers,
     source: e.source,
     target: e.target,
-  }))
+  })), [top30])
 
   // Build adjacency for network view
   const nodes = useMemo(() => {
@@ -332,7 +332,7 @@ function BreadthTab({ cr, onServiceClick }) {
         <div style={sectionStyle}>
           <h3 style={{ fontSize: 14, fontWeight: 600, color: theme.text.primary, marginBottom: 4 }}>Breiteste Kunden</h3>
           <p style={{ fontSize: 11, color: theme.text.muted, marginBottom: 16 }}>Kunden mit den meisten verschiedenen Services</p>
-          {customers.slice(0, 15).map((c, i) => (
+          {customers.slice(0, 15).map((c) => (
             <div key={c.customer} style={{ padding: '8px 0', borderBottom: `1px solid ${theme.border.subtle}` }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span style={{ fontSize: 13, fontWeight: 600, color: theme.text.primary }}>{c.customer}</span>

@@ -57,7 +57,7 @@ function ServicePills({ services, max = 5, onServiceClick }) {
   )
 }
 
-export function ERP2025View({ data, profiles, onServiceClick }) {
+export function ERP2025View({ profiles, onServiceClick }) {
   const meta = profiles?.meta || {}
   const projects = useMemo(() => profiles?.projectProfiles || [], [profiles])
   const customers = useMemo(() => profiles?.customerProfiles || [], [profiles])
@@ -296,7 +296,7 @@ export function ERP2025View({ data, profiles, onServiceClick }) {
                           {/* Ticket types */}
                           <div>
                             <div style={{ fontSize: 11, fontWeight: 600, color: theme.text.muted, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>Ticket-Typen</div>
-                            {Object.entries(expandedDetail.types || {}).sort(([, a], [, b]) => b - a).map(([type, count], ti) => (
+                            {Object.entries(expandedDetail.types || {}).sort(([, a], [, b]) => b - a).map(([type, count]) => (
                               <div key={type} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, padding: '2px 0', color: theme.text.secondary }}>
                                 <span>{type}</span>
                                 <span style={{ color: theme.text.muted, fontWeight: 600 }}>{count}</span>
@@ -344,7 +344,7 @@ export function ERP2025View({ data, profiles, onServiceClick }) {
             <YAxis dataKey="name" type="category" width={110} stroke={theme.text.muted} fontSize={11} />
             <Tooltip
               contentStyle={tooltipStyle}
-              formatter={(v, name, p) => [v.toLocaleString(), name === 'matched' ? 'Matched' : 'Unmatched']}
+              formatter={(v, name) => [v.toLocaleString(), name === 'matched' ? 'Matched' : 'Unmatched']}
               labelFormatter={(l, payload) => payload?.[0]?.payload?.fullName || l}
             />
             <Bar dataKey="matched" stackId="a" fill={theme.accent} radius={[0, 0, 0, 0]} name="matched" />

@@ -547,7 +547,7 @@ const DEAL_PHASE_COLORS = {
 function DealsTab({ data }) {
   const deals = data.codaDeals || []
 
-  const totalPipeline = deals.reduce((s, d) => {
+  const _totalPipeline = deals.reduce((s, d) => {
     const v = parseFloat((d.estimatedValue || '').replace(/[€.,]/g, (c) => c === ',' ? '.' : '').replace('€', '')) || 0
     return s + v
   }, 0)

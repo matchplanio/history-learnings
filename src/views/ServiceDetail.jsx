@@ -13,12 +13,12 @@ const sectionStyle = {
 }
 
 export function ServiceDetail({ service, onBack, onPersonClick }) {
-  if (!service) return null
-
   const trend = useMemo(() => {
-    if (!service.yearlyTickets) return []
+    if (!service?.yearlyTickets) return []
     return Object.entries(service.yearlyTickets).map(([year, count]) => ({ year, count })).sort((a, b) => a.year.localeCompare(b.year))
   }, [service])
+
+  if (!service) return null
 
   const tooltipStyle = { backgroundColor: theme.bg.card, border: `1px solid ${theme.border.default}`, borderRadius: 6, fontSize: 12 }
 

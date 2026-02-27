@@ -31,10 +31,18 @@ const navItems = [
   { id: 'methodik', label: 'Methodik', icon: '⚙' },
 ]
 
+function getInitialViewState() {
+  const hash = window.location.hash.slice(1)
+  if (hash && hash.startsWith('service-')) {
+    return { view: 'service-detail', service: decodeURIComponent(hash.slice(8)) }
+  }
+  return { view: hash || 'services', service: null }
+}
+
 function App() {
   const [data, setData] = useState(null)
-  const [currentView, setCurrentView] = useState('services')
-  const [selectedService, setSelectedService] = useState(null)
+  const [currentView, setCurrentView] = useState(() => getInitialViewState().view)
+  const [selectedService, setSelectedService] = useState(() => getInitialViewState().service)
   const [selectedPerson, setSelectedPerson] = useState(null)
   const [profiles, setProfiles] = useState(null)
 
@@ -44,18 +52,6 @@ function App() {
 
   useEffect(() => {
     fetch('/profiles2025.json').then(r => r.json()).then(setProfiles).catch(() => {})
-  }, [])
-
-  useEffect(() => {
-    const hash = window.location.hash.slice(1)
-    if (hash) {
-      if (hash.startsWith('service-')) {
-        setSelectedService(decodeURIComponent(hash.slice(8)))
-        setCurrentView('service-detail')
-      } else {
-        setCurrentView(hash)
-      }
-    }
   }, [])
 
   const navigate = (id) => {
