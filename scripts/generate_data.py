@@ -200,7 +200,8 @@ def analyze_historic_roles(tickets, roles_list, matchers):
                 "Managed Openshift", "Secure Remote Browsing",
             ],
             "projects": ["IEO"],
-            "min_coverage": 0.05,
+            "min_coverage": 0.12,         # Raised: CP must be significant focus
+            "min_role_tickets_abs": 30,   # Excludes incidental CP work
             "min_tickets": 20,
         },
         "System Engineer (Senior) (EnCo)": {
@@ -208,20 +209,25 @@ def analyze_historic_roles(tickets, roles_list, matchers):
             "projects": ["SXPP"],
             "min_coverage": 0.05,
             "min_tickets": 20,
+            "min_role_tickets_abs": 50,  # Excludes AMs/GF who track SXPP projects
         },
         "System Engineer (Junior) (EnCo)": {
             "services": ["vCIO"],
             "projects": ["SXPP"],
             "min_coverage": 0.03,
             "min_tickets": 10,
+            "min_role_tickets_abs": 60,  # Excludes AMs/GF who track SXPP but do few tickets
         },
         "Senior Berater Informationssicherheit": {
+            # Use only ISMS-keyword tickets as the role signal (no SXPP project)
             "services": ["Cyber Risiko Check (nach DIN Spec 27076)", "Managed Informationssicherheit (ISMS)"],
-            "projects": ["SXPP"],
-            "isms_filter": True,      # Only count if they have ISMS-keyword tickets
-            "isms_min": 3,            # At least 3 ISMS tickets required
-            "min_coverage": 0.01,
-            "min_tickets": 10,
+            "projects": [],
+            "isms_filter": True,          # Only count ISMS-keyword tickets
+            "isms_min": 3,                # At least 3 ISMS tickets required
+            "isms_as_role_signal": True,  # Use ISMS ticket count as role signal, not SXPP
+            "min_coverage": 0.001,        # Very low: filtered by abs count instead
+            "min_role_tickets_abs": 3,    # At least 3 absolute ISMS tickets
+            "min_tickets": 20,
         },
         "Software Engineer (Senior) (EnCo)": {
             "services": [],
@@ -247,7 +253,7 @@ def analyze_historic_roles(tickets, roles_list, matchers):
     }
 
     # Bot/system accounts to exclude from carrier analysis
-    BOT_ACCOUNTS = {"Automation for Jira", "JIRA", "jira", "system", "System"}
+    BOT_ACCOUNTS = {"Automation for Jira", "JIRA", "jira", "system", "System", "local-tecuser"}
 
     # ISMS/security keyword filter for Senior Berater role
     ISMS_KEYWORDS = re.compile(
@@ -312,9 +318,11 @@ def analyze_historic_roles(tickets, roles_list, matchers):
             sig_projects = set(sig.get("projects", []))
             min_coverage = sig.get("min_coverage", 0.10)
             min_total = sig.get("min_tickets", 20)
+            min_role_abs = sig.get("min_role_tickets_abs", 0)
 
             use_isms_filter = sig.get("isms_filter", False)
             isms_min = sig.get("isms_min", 0)
+            isms_as_signal = sig.get("isms_as_role_signal", False)
 
             carriers = []
             for person, total in person_total.most_common():
@@ -325,10 +333,15 @@ def analyze_historic_roles(tickets, roles_list, matchers):
                     continue
                 svc_tix = sum(person_service_tix[person].get(s, 0) for s in sig_services)
                 proj_tix = sum(person_project_tix[person].get(p, 0) for p in sig_projects)
-                # For ISMS role: use ISMS ticket count as the role signal
-                if use_isms_filter:
-                    proj_tix = max(proj_tix, person_isms_tix.get(person, 0))
-                coverage = (svc_tix + proj_tix) / total if total > 0 else 0
+                # For ISMS role: use ISMS ticket count directly as the role signal
+                if isms_as_signal:
+                    role_tix = svc_tix + person_isms_tix.get(person, 0)
+                else:
+                    role_tix = svc_tix + proj_tix
+                # Absolute role ticket minimum (filters out incidental contributors)
+                if min_role_abs and role_tix < min_role_abs:
+                    continue
+                coverage = role_tix / total if total > 0 else 0
                 if coverage >= min_coverage:
                     top_svcs = sorted(
                         [(s, person_service_tix[person][s]) for s in sig_services
@@ -343,7 +356,7 @@ def analyze_historic_roles(tickets, roles_list, matchers):
                     entry = {
                         "name": person,
                         "totalTickets": total,
-                        "roleTickets": svc_tix + proj_tix,
+                        "roleTickets": role_tix,
                         "coverage": round(coverage * 100, 1),
                         "isCurrent": person in current,
                         "topServices": [{"name": s, "count": c} for s, c in top_svcs],
@@ -355,7 +368,7 @@ def analyze_historic_roles(tickets, roles_list, matchers):
 
             # Sort by coverage × volume (cap volume at 5000 to avoid Peter Sturm dominating)
             carriers.sort(key=lambda x: -(x["coverage"] * min(x["totalTickets"], 5000)))
-            role_entry["historicCarriers"] = carriers[:15]
+            role_entry["historicCarriers"] = carriers[:20]
 
         result_roles.append(role_entry)
 
